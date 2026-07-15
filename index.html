@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Merkentool Zuiderlicht v1.58</title>
+	<title>Merkentool Zuiderlicht v1.63</title>
 	<style>
 		a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}body{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}*{box-sizing:border-box}body{background-image:url(./img/achtergrond2.jpg);background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover;font-family:sans-serif;color:#3f3f3f}main{width:80%;min-width:1000px;margin:0 auto;padding-bottom:50px;background-color:rgba(240,240,240,.85);min-height:87vh}main>h1{font-size:28px;text-align:center;font-weight:700;padding-top:15px;}article{width:80%;min-width:800px;min-height:700px;border-radius:3px;background-color:rgba(240,240,240,.5);display:inline-block;text-align:center;padding-bottom:25px;margin:0 auto;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.18)}article>h3{font-size:28px;font-weight:800;margin-bottom:25px}label{font-size:18px}input{font-size:16px}table{width:100% !important;background-color:#d3d3d3;opacity:.8;margin:0 auto;font-size:22px;line-height:22px}table th{font-weight:700;padding:5px;background-color:#a9a9a9;border:2px solid #000}table td{border:1px solid #000;vertical-align:middle;font-size:1.2rem;padding:5px;}tr:nth-child(even){background:rgba(136,188,86,.2)}tr:nth-child(odd){background:#fff}#solidariteit{flex:1 1 65% !important;min-width:600px !important;}
 	</style>
@@ -35,26 +35,59 @@
 
 		function filterOpzoeking(zoekString) {
 			zoekTerm = zoekString.trim().toLowerCase();
-			if (zoekTerm === "#kuis#" || zoekTerm === "*admin*") { return [...merkenLijst]; }
-			return merkenLijst.filter(function(v) { return v["merk"].toString().toLowerCase().indexOf(zoekTerm) !== -1; });
+			if (zoekTerm === "#kuis#" || zoekTerm === "*admin*") { 
+				return JSON.parse(JSON.stringify(merkenLijst)); 
+			}
+
+			var gevondenMerken = merkenLijst.filter(function(v) { 
+				return v && v["merk"] && v["merk"].toString().toLowerCase().indexOf(zoekTerm) !== -1; 
+			});
+
+			gevondenMerken.sort(function(a, b) {
+				var aName = String(a.merk).toLowerCase();
+				var bName = String(b.merk).toLowerCase();
+				var aStarts = aName.indexOf(zoekTerm) === 0;
+				var bStarts = bName.indexOf(zoekTerm) === 0;
+
+				if (aStarts && !bStarts) return -1;
+				if (!aStarts && bStarts) return 1;
+				return aName.localeCompare(bName, 'nl', { numeric: true, sensitivity: 'base' });
+			});
+
+			return gevondenMerken;
 		}
+
 		document.getElementById("zoeken").onclick = function() { zoeken(); };
 		document.getElementById('searchTxt').addEventListener('keypress', function(e) { if(e.keyCode == 13) { zoeken(); return false; } });
 
 		function zoeken(){
+			var tabel = document.getElementById("resultTable");
+			if (tabel) tabel.style.display = "none"; 
+			
 			verwijderOpzoeking();
+			
 			let zoekString = document.getElementById("searchTxt").value;
 			if(zoekString.length > 2 || zoekString.trim() === "#kuis#" || zoekString.trim() === "*admin*") {
 				var resultaat = filterOpzoeking(zoekString);
 				toonZoekopdracht(resultaat);
-			} else { document.getElementById("error").style.display="initial"; }
+			} else { 
+				document.getElementById("error").style.display="initial"; 
+				if (tabel) tabel.style.display = "";
+			}
 			document.getElementById("searchTxt").focus();
 		}
 
+		// DEFINTIEVE FIX IN V1.62: Geen trage for-loop meer. De tabel wordt nu in 1 milliseconde schoongeveegd!
 		function verwijderOpzoeking() {
 			document.getElementById("error").style.display="none";
-			var zoekResultaten = document.getElementsByClassName("resultRow");
-			for (let i = zoekResultaten.length - 1; i >= 0; i--) { zoekResultaten[i].parentNode.removeChild(zoekResultaten[i]); }
+			var tabel = document.getElementById("resultTable");
+			if (tabel) {
+				var isIngelogd = localStorage.getItem('zuiderlicht_ingelogd') === 'ja';
+				var selectHeader = isIngelogd ? '<th id="thSelect" style="width:50px;">Kuis</th>' : '<th id="thSelect" style="width:50px; display:none;">Kuis</th>';
+				var actiesHeader = isIngelogd ? '<th id="thActies" style="width:120px;">Acties</th>' : '<th id="thActies" style="width:120px; display:none;">Acties</th>';
+				
+				tabel.innerHTML = `<tr id="resultHeader">${selectHeader}<th>Merk</th><th>Sterren</th><th>Info</th>${actiesHeader}</tr>`;
+			}
 		}
 		function toonZoekopdracht(results){
 			if (!results || results.length === 0){
@@ -64,6 +97,8 @@
 				if (typeof window.voegBeheerKnoppenToe === 'function') window.voegBeheerKnoppenToe();
 				if (typeof window.activeerShiftKlik === 'function') window.activeerShiftKlik();
 			}
+			var tabel = document.getElementById("resultTable");
+			if (tabel) tabel.style.display = "";
 		}
 
 		function maakZoekresultaatLijst(text, sterren, info){
@@ -94,19 +129,24 @@
 		}
 
 		window.activeerShiftKlik = function() {
-			var checkboxes = Array.from(document.querySelectorAll('.kuisCheck'));
 			let lastChecked = null;
-			checkboxes.forEach(function(checkbox) {
-				checkbox.onclick = function(e) {
-					if (!lastChecked) { lastChecked = this; return; }
-					if (e.shiftKey) {
-						let start = checkboxes.indexOf(this);
+			var container = document.getElementById("resultTable");
+			if (!container) return;
+
+			container.onclick = function(e) {
+				if (e.target && e.target.classList.contains("kuisCheck")) {
+					var checkbox = e.target;
+					if (e.shiftKey && lastChecked) {
+						var checkboxes = Array.from(document.querySelectorAll('.kuisCheck'));
+						let start = checkboxes.indexOf(checkbox);
 						let end = checkboxes.indexOf(lastChecked);
-						checkboxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(chk => chk.checked = lastChecked.checked);
+						if (start > -1 && end > -1) {
+							checkboxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(chk => chk.checked = lastChecked.checked);
+						}
 					}
-					lastChecked = this;
-				};
-			});
+					lastChecked = checkbox;
+				}
+			};
 		}
 		// --- VANAF HIER BEGINT DE NIEUWE CODE ---
 		window.addEventListener('load', function() {
@@ -160,21 +200,28 @@
 					adminDiv.style.display = "block";
 					loginContainer.innerHTML = `<button id="admLoginBtn" style="background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 13px;">🔒 Uitloggen</button>`;
 				}
-				loginContainer.addEventListener('click', function(e) {
+								loginContainer.addEventListener('click', function(e) {
 					if (e.target && e.target.id === 'admLoginBtn') {
 						if (adminDiv.style.display === "block") { localStorage.setItem('zuiderlicht_ingelogd', 'nee'); window.location.reload(); }
-						else { if (document.getElementById('admWwInput').value === localStorage.getItem('zuiderlicht_wachtwoord')) { localStorage.setItem('zuiderlicht_ingelogd', 'ja'); window.location.reload(); } else { alert("Onjuist!"); } }
+						else { if (document.getElementById('admWwInput').value === localStorage.getItem('zuiderlicht_wachtwoord')) { localStorage.setItem('zuiderlicht_ingelogd', 'ja'); window.location.reload(); } else { alert("Onjuist Wachtwoord!"); } }
 					}
 				});
 
+				// BULK WISSER FIX V1.63: Onthoudt nu ook #kuis# en activeert de GROENE kleurcode erboven
 				document.getElementById('admBulkDelBtn').addEventListener('click', function() {
 					var checks = document.querySelectorAll('.kuisCheck:checked'); if (checks.length === 0) { alert("Vink eerst merken aan."); return; }
 					if (confirm(`Weet je zeker dat je deze ${checks.length} merken wilt wissen?`)) {
 						var db = getDB(); var names = Array.from(checks).map(c => c.value.toLowerCase());
 						var clean = db.filter(m => m && m.merk && names.indexOf(String(m.merk).toLowerCase()) === -1);
+						
+						// Zoek het merk dat direct BOVEN het eerste geselecteerde merk staat voor de groene kleur
 						var alleRijen = Array.from(document.getElementById("resultTable").getElementsByTagName("tr"));
-						var mIndex = alleRijen.findIndex(r => r.getAttribute("data-merk") === checks[0].value);
-						if (mIndex > 1 && alleRijen[mIndex - 1]) { localStorage.setItem('zuiderlicht_scroll_merk', alleRijen[mIndex - 1].getAttribute("data-merk")); localStorage.setItem('zuiderlicht_kleur_type', 'verwijderd'); }
+						var mIndex = alleRijen.findIndex(r => r.querySelector('.kuisCheck:checked'));
+						if (mIndex > 1 && alleRijen[mIndex - 1]) { 
+							localStorage.setItem('zuiderlicht_scroll_merk', alleRijen[mIndex - 1].getAttribute("data-merk")); 
+							localStorage.setItem('zuiderlicht_kleur_type', 'verwijderd'); 
+						}
+						
 						saveDB(clean); merkenLijst = clean; alert("Gewist!"); window.herlaadEnBehoudScroll();
 					}
 				});
@@ -189,7 +236,7 @@
 					db.sort(function(a, b) { return String(a.merk).localeCompare(String(b.merk), 'nl', { numeric: true, sensitivity: 'base' }); });
 					saveDB(db); localStorage.setItem('zuiderlicht_scroll_merk', m); localStorage.setItem('zuiderlicht_kleur_type', 'aangepast'); window.herlaadEnBehoudScroll();
 				});
-				document.getElementById('admAnnuleren').addEventListener('click', window.resetForm);
+				document.getElementById('admAnnuleren').addEventListener('click', resetForm);
 			}
 
 			window.voegBeheerKnoppenToe = function() {
@@ -216,7 +263,6 @@
 				document.getElementById('admTitel').innerText = "Nieuw merk toevoegen"; document.getElementById('admOpslaan').innerText = "Merk Opslaan"; document.getElementById('admAnnuleren').style.display = "none";
 			}
 
-			// GECORRIGEERDE PLAK-RESTORE LOGICA (WERKT ALTIJD EN OVERAL)
 			setTimeout(function() {
 				if(document.getElementById('admBackupBtn')) {
 					document.getElementById('admBackupBtn').onclick = function() {
@@ -229,17 +275,19 @@
 				if(document.getElementById('admRestoreBtn')) {
 					document.getElementById('admRestoreBtn').onclick = function() {
 						var geplakteTekst = document.getElementById('admRestoreArea').value.trim();
-						if (geplakteTekst === "") { alert("Plak eerst de tekst uit je back-up bestand in het vak hierboven!"); return; }
+						if (geplakteTekst === "") { alert("Plak eerst de tekst uit je back-up bestand!"); return; }
 						if (confirm("Weet je zeker dat je deze back-up wilt herstellen? Dit overschrijft de huidige lijst direct!")) {
 							try {
 								var hersteldeLijst = JSON.parse(geplakteTekst);
 								if (Array.isArray(hersteldeLijst)) {
 									localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(hersteldeLijst));
-									alert("De database is succesvol hersteld! De pagina start nu opnieuw op.");
+									alert("De database is succesvol hersteld!");
 									document.getElementById('admRestoreArea').value = "";
+									// RESTORE FIX: Onthoudt de zoekopdracht (of #kuis#) bij het herladen
+									localStorage.setItem('zuiderlicht_laatste_zoekopdracht', document.getElementById("searchTxt").value || "#kuis#");
 									window.location.reload();
 								} else { alert("Fout: Deze tekst bevat geen geldige merkenlijst."); }
-							} catch(f) { alert("Fout: De geplakte tekst is beschadigd of onvolledig."); }
+							} catch(f) { alert("Fout: De geplakte tekst is onvolledig."); }
 						}
 					};
 				}
@@ -247,8 +295,13 @@
 
 			activeerModernBeheer();
 
+			// OPSTART-GEHEUGEN FIX V1.63: Onthoudt nu ELKE zoekterm (ook #kuis#) na een actie
 			const laatsteZoekopdracht = localStorage.getItem('zuiderlicht_laatste_zoekopdracht');
-			if (laatsteZoekopdracht) { localStorage.removeItem('zuiderlicht_laatste_zoekopdracht'); document.getElementById("searchTxt").value = laatsteZoekopdracht; window.zoeken(); }
+			if (laatsteZoekopdracht && laatsteZoekopdracht.trim() !== "") { 
+				localStorage.removeItem('zuiderlicht_laatste_zoekopdracht'); 
+				document.getElementById("searchTxt").value = laatsteZoekopdracht; 
+				window.zoeken(); 
+			}
 
 			const doelMerk = localStorage.getItem('zuiderlicht_scroll_merk');
 			const kleurType = localStorage.getItem('zuiderlicht_kleur_type');
