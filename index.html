@@ -2,9 +2,21 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Merkentool Zuiderlicht v1.63</title>
+	<title>Merkentool Zuiderlicht v1.69</title>
 	<style>
 		a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}body{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}*{box-sizing:border-box}body{background-image:url(./img/achtergrond2.jpg);background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover;font-family:sans-serif;color:#3f3f3f}main{width:80%;min-width:1000px;margin:0 auto;padding-bottom:50px;background-color:rgba(240,240,240,.85);min-height:87vh}main>h1{font-size:28px;text-align:center;font-weight:700;padding-top:15px;}article{width:80%;min-width:800px;min-height:700px;border-radius:3px;background-color:rgba(240,240,240,.5);display:inline-block;text-align:center;padding-bottom:25px;margin:0 auto;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.18)}article>h3{font-size:28px;font-weight:800;margin-bottom:25px}label{font-size:18px}input{font-size:16px}table{width:100% !important;background-color:#d3d3d3;opacity:.8;margin:0 auto;font-size:22px;line-height:22px}table th{font-weight:700;padding:5px;background-color:#a9a9a9;border:2px solid #000}table td{border:1px solid #000;vertical-align:middle;font-size:1.2rem;padding:5px;}tr:nth-child(even){background:rgba(136,188,86,.2)}tr:nth-child(odd){background:#fff}#solidariteit{flex:1 1 65% !important;min-width:600px !important;}
+		
+		/* FIX IN V1.66: Pinned het zoekvenster vast aan de bovenkant bij het scrollen */
+		.pinned-zoekzone {
+			position: sticky;
+			top: 0;
+			background: #f0f0f0; /* Zorgt dat de tabel er onzichtbaar achterdoor glijdt */
+			padding-top: 15px;
+			padding-bottom: 20px;
+			z-index: 100;
+			border-bottom: 2px solid #ccc;
+			margin-bottom: 20px;
+		}
 	</style>
 </head>
 <body>
@@ -12,11 +24,22 @@
 		<main style="padding: 2rem;">
 			<h1>Merkentool Zuiderlicht Genk</h1>
 			<article id="solidariteit">
-				<label for="merk">Op te zoeken merk: </label><br>
-				<input type="text" id="searchTxt" name="merk" size="50" autofocus><br>
-				<input type="submit" id="zoeken" value="Zoeken!"><br>
-				<p id="error" style="color: red; display: none">Gelieve minstens 3 letters of #kuis# in te geven.</p>
-				<hr>
+				
+				<!-- Alles in deze zone blijft vanaf nu muurvast in beeld staan -->
+				<div class="pinned-zoekzone">
+					<label for="merk">Op te zoeken merk: </label><br>
+					<input type="text" id="searchTxt" name="merk" size="50" autofocus><br>
+					<input type="submit" id="zoeken" value="Zoeken!"><br>
+					<p id="error" style="color: red; display: none">Gelieve minstens 3 letters of #kuis# in te geven.</p>
+					
+					<div id="vrijwilligerVoorstelBlok" style="display:none; margin: 15px auto; padding: 15px; background: #fff2cc; border: 1px solid #f1c40f; border-radius: 4px; max-width: 500px; text-align: left;">
+						<h4 style="font-weight:bold; margin-bottom:8px; font-size:16px;">📝 Merk opschrijven in het boekje:</h4>
+						<div style="margin-bottom:8px;"><label style="font-size:14px; font-weight:bold;">Merknaam:</label> <input type="text" id="vrijwMerk" style="width:100%; padding:6px; font-size:15px;"></div>
+						<div style="margin-bottom:8px;"><label style="font-size:14px; font-weight:bold;">Extra info (optioneel):</label> <input type="text" id="vrijwInfo" style="width:100%; padding:6px; font-size:15px;" placeholder="Bijv. kledij, schoenen..."></div>
+						<button id="vrijwIndienenBtn" style="background:#3498db; color:white; border:none; padding:8px; border-radius:3px; cursor:pointer; font-weight:bold; width:100%; font-size:15px;">In het boekje schrijven</button>
+					</div>
+				</div>
+
 				<h3>Resultaten</h3>
 				<table id="resultTable">
 					<tr id="resultHeader">
@@ -64,7 +87,13 @@
 			var tabel = document.getElementById("resultTable");
 			if (tabel) tabel.style.display = "none"; 
 			
+			var voorstelBlok = document.getElementById("vrijwilligerVoorstelBlok");
+			if (voorstelBlok) voorstelBlok.style.display = "none";
+			
 			verwijderOpzoeking();
+			
+			// SCROLL RESET FIX IN V1.67: Flitst de pagina direct zachtjes terug naar de top bij een nieuwe zoekopdracht
+			window.scrollTo(0, 0);
 			
 			let zoekString = document.getElementById("searchTxt").value;
 			if(zoekString.length > 2 || zoekString.trim() === "#kuis#" || zoekString.trim() === "*admin*") {
@@ -77,7 +106,6 @@
 			document.getElementById("searchTxt").focus();
 		}
 
-		// DEFINTIEVE FIX IN V1.62: Geen trage for-loop meer. De tabel wordt nu in 1 milliseconde schoongeveegd!
 		function verwijderOpzoeking() {
 			document.getElementById("error").style.display="none";
 			var tabel = document.getElementById("resultTable");
@@ -89,9 +117,36 @@
 				tabel.innerHTML = `<tr id="resultHeader">${selectHeader}<th>Merk</th><th>Sterren</th><th>Info</th>${actiesHeader}</tr>`;
 			}
 		}
+
 		function toonZoekopdracht(results){
 			if (!results || results.length === 0){
 				maakZoekresultaatLijst(geenResultaatObject["merk"], geenResultaatObject["sterren"], geenResultaatObject["info"]);
+				
+				// V1.65 FIX: Toon een handmatige, discrete knop onder de 'Niet gevonden' melding
+				var gezochteNaam = document.getElementById("searchTxt").value.trim();
+				if (gezochteNaam !== "" && gezochteNaam.toLowerCase() !== "#kuis#") {
+					var tabel = document.getElementById("resultTable");
+					var rijen = tabel.getElementsByTagName("tr");
+					var laatsteRij = rijen[rijen.length - 1];
+					
+					// Voeg een extra cel toe met de handmatige knop
+					var knopCel = document.createElement("td");
+					knopCel.setAttribute("colspan", "5");
+					knopCel.style.cssText = "text-align:center; padding: 10px; background:#fff2cc;";
+					knopCel.innerHTML = `<button id="btnOpenBoekje" style="background:#2980b9; color:white; border:none; padding:8px 15px; border-radius:3px; font-weight:bold; cursor:pointer; font-size:14px;">📝 Schrijf "${gezochteNaam}" in het boekje</button>`;
+					
+					knopCel.querySelector('#btnOpenBoekje').onclick = function() {
+						document.getElementById("vrijwMerk").value = gezochteNaam;
+						document.getElementById("vrijwInfo").value = "";
+						document.getElementById("vrijwilligerVoorstelBlok").style.display = "block";
+						this.style.display = "none"; // Verberg de knop na het klikken
+					};
+					
+					var extraRij = document.createElement("tr");
+					extraRij.setAttribute("class", "resultRow");
+					extraRij.appendChild(knopCel);
+					tabel.appendChild(extraRij);
+				}
 			} else {
 				results.forEach(function(r){ maakZoekresultaatLijst(r["merk"], r["sterren"], r["info"]); });
 				if (typeof window.voegBeheerKnoppenToe === 'function') window.voegBeheerKnoppenToe();
@@ -121,7 +176,7 @@
 
 			var actieCel = document.createElement("td");
 			actieCel.className = "tdActionCell"; actieCel.style.cssText = "text-align:center; display:none; width:120px;";
-			if (text !== "Merk niet gevonden!") {
+			if (text !== "Merk not gevonden!" && text !== "Merk niet gevonden!") {
 				actieCel.innerHTML = `<button class="btn-edit" data-m="${text}" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer; font-size:13px; font-weight:bold;">Aanpassen</button>`;
 			}
 			resultaatRij.appendChild(actieCel);
@@ -156,8 +211,14 @@
 				merkenLijst = JSON.parse(localStorage.getItem('zuiderlicht_db_v6'));
 			}
 
+			if (!localStorage.getItem('zuiderlicht_boekje_v1')) { localStorage.setItem('zuiderlicht_boekje_v1', JSON.stringify([])); }
+
 			function getDB() { return JSON.parse(localStorage.getItem('zuiderlicht_db_v6')) || []; }
 			function saveDB(db) { localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(db)); }
+			
+			function getBoekje() { return JSON.parse(localStorage.getItem('zuiderlicht_boekje_v1')) || []; }
+			function saveBoekje(b) { localStorage.setItem('zuiderlicht_boekje_v1', JSON.stringify(b)); }
+
 			window.herlaadEnBehoudScroll = function() { localStorage.setItem('zuiderlicht_scroll_pos', window.scrollY); localStorage.setItem('zuiderlicht_laatste_zoekopdracht', document.getElementById("searchTxt").value); window.location.reload(); }
 
 			function activeerModernBeheer() {
@@ -185,6 +246,13 @@
 					<hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
 					<button id="admBulkDelBtn" style="background:#e74c3c; color:white; font-size:15px; padding:10px; border:none; border-radius:3px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:15px;">🗑️ Geselecteerde merken wissen</button>
 					<hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
+					
+					<div id="admBoekjeSectie" style="margin-bottom: 15px; padding: 10px; background: #fff2cc; border: 1px solid #f1c40f; border-radius: 4px;">
+						<h4 style="font-weight:bold; font-size:14px; margin-bottom:8px;">📋 Merken in het boekje:</h4>
+						<div id="admBoekjeLijst" style="max-height: 150px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 6px;"></div>
+					</div>
+					<hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
+
 					<button id="admBackupBtn" style="background:#34495e; color:white; font-size:14px; padding:8px; border:none; border-radius:3px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:8px;">📥 Back-up Maken</button>
 					<div style="margin-top:10px; padding:10px; background:#e2e2e2; border-radius:3px;">
 						<label style="font-weight:bold; display:block; font-size:13px; margin-bottom:5px;">Plak hier de back-up tekst:</label>
@@ -200,28 +268,60 @@
 					adminDiv.style.display = "block";
 					loginContainer.innerHTML = `<button id="admLoginBtn" style="background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 13px;">🔒 Uitloggen</button>`;
 				}
-								loginContainer.addEventListener('click', function(e) {
+				loginContainer.addEventListener('click', function(e) {
 					if (e.target && e.target.id === 'admLoginBtn') {
 						if (adminDiv.style.display === "block") { localStorage.setItem('zuiderlicht_ingelogd', 'nee'); window.location.reload(); }
 						else { if (document.getElementById('admWwInput').value === localStorage.getItem('zuiderlicht_wachtwoord')) { localStorage.setItem('zuiderlicht_ingelogd', 'ja'); window.location.reload(); } else { alert("Onjuist Wachtwoord!"); } }
 					}
 				});
 
-				// BULK WISSER FIX V1.63: Onthoudt nu ook #kuis# en activeert de GROENE kleurcode erboven
+				window.tekenBoekjeVoorAnn = function() {
+					const lijstDiv = document.getElementById("admBoekjeLijst"); if (!lijstDiv) return;
+					const boekje = getBoekje(); lijstDiv.innerHTML = "";
+					if (boekje.length === 0) { lijstDiv.innerHTML = "<em style='color:grey;'>Het boekje is leeg.</em>"; return; }
+					
+					boekje.forEach(function(item, index) {
+						const rij = document.createElement("div");
+						rij.style.cssText = "padding:6px; background:white; border-radius:3px; border:1px solid #ddd; display:flex; flex-direction:column; gap:4px;";
+						rij.innerHTML = `
+							<div><strong>${item.merk}</strong> <span style="font-size:11px; color:grey;">(${item.info || 'geen info'})</span></div>
+							<div style="display:flex; gap:5px;">
+								<button class="btn-approve" data-idx="${index}" style="background:#88bc56; color:white; border:none; padding:3px 6px; border-radius:2px; font-size:11px; font-weight:bold; cursor:pointer; flex:1;">✅ Goedkeuren</button>
+								<button class="btn-ignore" data-idx="${index}" style="background:#e74c3c; color:white; border:none; padding:3px 6px; border-radius:2px; font-size:11px; font-weight:bold; cursor:pointer; flex:1;">❌ Negeren</button>
+							</div>
+						`;
+						
+						rij.querySelector('.btn-approve').onclick = function() {
+							document.getElementById('admIndex').value = "-1";
+							document.getElementById('admMerk').value = item.merk;
+							document.getElementById('admSterren').value = "";
+							document.getElementById('admInfo').value = item.info || "";
+							document.getElementById('admTitel').innerText = "Merk toevoegen (Uit Boekje)";
+							document.getElementById('admOpslaan').innerText = "Toevoegen aan Lijst";
+							document.getElementById('admAnnuleren').style.display = "block";
+							document.getElementById('admSterren').focus();
+							
+							let b = getBoekje(); b.splice(index, 1); saveBoekje(b); window.tekenBoekjeVoorAnn();
+						};
+						
+						rij.querySelector('.btn-ignore').onclick = function() {
+							if (confirm(`"${item.merk}" uit het boekje wissen?`)) {
+								let b = getBoekje(); b.splice(index, 1); saveBoekje(b); window.tekenBoekjeVoorAnn();
+							}
+						};
+						lijstDiv.appendChild(rij);
+					});
+				}
+				window.tekenBoekjeVoorAnn();
+
 				document.getElementById('admBulkDelBtn').addEventListener('click', function() {
 					var checks = document.querySelectorAll('.kuisCheck:checked'); if (checks.length === 0) { alert("Vink eerst merken aan."); return; }
 					if (confirm(`Weet je zeker dat je deze ${checks.length} merken wilt wissen?`)) {
 						var db = getDB(); var names = Array.from(checks).map(c => c.value.toLowerCase());
 						var clean = db.filter(m => m && m.merk && names.indexOf(String(m.merk).toLowerCase()) === -1);
-						
-						// Zoek het merk dat direct BOVEN het eerste geselecteerde merk staat voor de groene kleur
 						var alleRijen = Array.from(document.getElementById("resultTable").getElementsByTagName("tr"));
 						var mIndex = alleRijen.findIndex(r => r.querySelector('.kuisCheck:checked'));
-						if (mIndex > 1 && alleRijen[mIndex - 1]) { 
-							localStorage.setItem('zuiderlicht_scroll_merk', alleRijen[mIndex - 1].getAttribute("data-merk")); 
-							localStorage.setItem('zuiderlicht_kleur_type', 'verwijderd'); 
-						}
-						
+						if (mIndex > 1 && alleRijen[mIndex - 1]) { localStorage.setItem('zuiderlicht_scroll_merk', alleRijen[mIndex - 1].getAttribute("data-merk")); localStorage.setItem('zuiderlicht_kleur_type', 'verwijderd'); }
 						saveDB(clean); merkenLijst = clean; alert("Gewist!"); window.herlaadEnBehoudScroll();
 					}
 				});
@@ -237,6 +337,38 @@
 					saveDB(db); localStorage.setItem('zuiderlicht_scroll_merk', m); localStorage.setItem('zuiderlicht_kleur_type', 'aangepast'); window.herlaadEnBehoudScroll();
 				});
 				document.getElementById('admAnnuleren').addEventListener('click', resetForm);
+			}
+			// VRIJWILLIGER ACTIE FIX V1.69: Neutrale meldingen zonder naam aan de voorkant
+			if(document.getElementById('vrijwIndienenBtn')) {
+				document.getElementById('vrijwIndienenBtn').onclick = function() {
+					var m = document.getElementById('vrijwMerk').value.trim();
+					var inf = document.getElementById('vrijwInfo').value.trim();
+					if (!m) { alert("Vul aub een merknaam in."); return; }
+					
+					var b = getBoekje();
+					
+					var bestaatAl = b.some(function(item) {
+						return item && item.merk && item.merk.toLowerCase() === m.toLowerCase();
+					});
+					
+					if (bestaatAl) {
+						// FIX V1.69: Volledig neutrale melding voor vrijwilligers
+						alert(`Dit merk is al voorgesteld in het boekje! Het hoeft niet nogmaals te worden opgeslagen.`);
+						document.getElementById("vrijwilligerVoorstelBlok").style.display = "none";
+						document.getElementById("searchTxt").value = "";
+						window.verwijderOpzoeking();
+						return; 
+					}
+					
+					b.push({ "merk": m, "info": inf });
+					saveBoekje(b);
+					
+					// FIX V1.69: Volledig neutrale succesmelding
+					alert(`"${m}" is succesvol in het boekje geschreven!`);
+					document.getElementById("vrijwilligerVoorstelBlok").style.display = "none";
+					document.getElementById("searchTxt").value = "";
+					window.verwijderOpzoeking();
+				}
 			}
 
 			window.voegBeheerKnoppenToe = function() {
@@ -266,9 +398,10 @@
 			setTimeout(function() {
 				if(document.getElementById('admBackupBtn')) {
 					document.getElementById('admBackupBtn').onclick = function() {
-						var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getDB(), null, 2));
+						var pakket = { db: getDB(), boekje: getBoekje() };
+						var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pakket, null, 2));
 						var dlAnchor = document.createElement('a'); dlAnchor.setAttribute("href", dataStr);
-						dlAnchor.setAttribute("download", "zuiderlicht_merken_backup_" + new Date().toISOString().slice(0, 10) + ".json");
+						dlAnchor.setAttribute("download", "zuiderlicht_totaal_backup_" + new Date().toISOString().slice(0, 10) + ".json");
 						document.body.appendChild(dlAnchor); dlAnchor.click(); dlAnchor.remove();
 					};
 				}
@@ -276,18 +409,20 @@
 					document.getElementById('admRestoreBtn').onclick = function() {
 						var geplakteTekst = document.getElementById('admRestoreArea').value.trim();
 						if (geplakteTekst === "") { alert("Plak eerst de tekst uit je back-up bestand!"); return; }
-						if (confirm("Weet je zeker dat je deze back-up wilt herstellen? Dit overschrijft de huidige lijst direct!")) {
+						if (confirm("Weet je zeker dat je deze back-up wilt herstellen?")) {
 							try {
-								var hersteldeLijst = JSON.parse(geplakteTekst);
-								if (Array.isArray(hersteldeLijst)) {
-									localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(hersteldeLijst));
-									alert("De database is succesvol hersteld!");
-									document.getElementById('admRestoreArea').value = "";
-									// RESTORE FIX: Onthoudt de zoekopdracht (of #kuis#) bij het herladen
-									localStorage.setItem('zuiderlicht_laatste_zoekopdracht', document.getElementById("searchTxt").value || "#kuis#");
-									window.location.reload();
-								} else { alert("Fout: Deze tekst bevat geen geldige merkenlijst."); }
-							} catch(f) { alert("Fout: De geplakte tekst is onvolledig."); }
+								var pakket = JSON.parse(geplakteTekst);
+								if (pakket.db && Array.isArray(pakket.db)) {
+									localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(pakket.db));
+									localStorage.setItem('zuiderlicht_boekje_v1', JSON.stringify(pakket.boekje || []));
+								} else if (Array.isArray(pakket)) {
+									localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(pakket));
+								}
+								alert("De database en het boekje zijn succesvol hersteld!");
+								document.getElementById('admRestoreArea').value = "";
+								localStorage.setItem('zuiderlicht_laatste_zoekopdracht', document.getElementById("searchTxt").value || "#kuis#");
+								window.location.reload();
+							} catch(f) { alert("Fout bij inlezen."); }
 						}
 					};
 				}
@@ -295,7 +430,6 @@
 
 			activeerModernBeheer();
 
-			// OPSTART-GEHEUGEN FIX V1.63: Onthoudt nu ELKE zoekterm (ook #kuis#) na een actie
 			const laatsteZoekopdracht = localStorage.getItem('zuiderlicht_laatste_zoekopdracht');
 			if (laatsteZoekopdracht && laatsteZoekopdracht.trim() !== "") { 
 				localStorage.removeItem('zuiderlicht_laatste_zoekopdracht'); 
@@ -324,3 +458,4 @@
 	</script>
 </body>
 </html>
+	
