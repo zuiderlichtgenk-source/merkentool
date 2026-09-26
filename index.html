@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Merkentool Zuiderlicht v1.99</title>
+	<title>Merkentool Zuiderlicht v2.01</title>
 	<style>
 		a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}body{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}*{box-sizing:border-box}body{background-image:url(./img/achtergrond2.jpg);background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover;font-family:sans-serif;color:#3f3f3f}main{width:80%;min-width:1000px;margin:0 auto;padding-bottom:50px;background-color:rgba(240,240,240,.85);min-height:87vh}main>h1{font-size:28px;text-align:center;font-weight:700;padding-top:15px;}article{width:80%;min-width:800px;min-height:700px;border-radius:3px;background-color:rgba(240,240,240,.5);display:inline-block;text-align:center;padding-bottom:25px;margin:0 auto;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.18)}article>h3{font-size:28px;font-weight:800;margin-bottom:25px}label{font-size:18px}input,select{font-size:16px;padding:5px;}table{width:100% !important;background-color:#d3d3d3;opacity:.8;margin:0 auto;font-size:22px;line-height:22px}table th{font-weight:700;padding:5px;background-color:#a9a9a9;border:2px solid #000}table td{border:1px solid #000;vertical-align:middle;font-size:1.2rem;padding:5px;}tr:nth-child(even){background:rgba(136,188,86,.2)}tr:nth-child(odd){background:#fff}#solidariteit{flex:1 1 65% !important;min-width:600px !important;}
 		.pinned-zoekzone {position: sticky; top: 0; background: #f0f0f0; padding-top: 15px; padding-bottom: 20px; z-index: 100; border-bottom: 2px solid #ccc; margin-bottom: 20px;}
@@ -79,17 +79,20 @@
 				<div id="boekjeSplitSectie" style="display:none; margin-top:40px; padding:20px; background-color: rgba(215, 235, 232, 0.85); border-top: 3px solid #85b5b5; border-bottom: 3px solid #85b5b5; border-radius:4px;">
 					<h3 style="font-size:28px; font-weight:800; margin-bottom:15px; color:#3f3f3f; text-align:center;">📋 Boekje: Wachtend op goedkeuring</h3>
 					
-					<!-- BOEKJE ACTIES BALK -->
-					<div id="balkBoekjeActies" style="display:flex; gap:12px; background:#cbe4de; border:2px solid #6c9b9b; padding:10px 15px; border-radius:4px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:15px;">
+				<!-- BOEKJE ACTIES BALK MET EIGEN IMPORTKNOP VOOR THUIS -->
+					<div id="balkBoekjeActies" style="display:flex; gap:10px; background:#cbe4de; border:2px solid #6c9b9b; padding:10px 15px; border-radius:4px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:15px;">
 						<div style="display:flex; align-items:center; gap:15px;">
 							<h4 style="margin:0; color:#134e4a; font-weight:800; font-size:16px;">⚡ Boekje Acties:</h4>
 							<label style="cursor:pointer; font-size:13px; font-weight:bold; color:#134e4a; display:flex; align-items:center; gap:5px; user-select:none;">
 								<input type="checkbox" id="checkAllBoekje" style="transform:scale(1.2); cursor:pointer;"> Alles selecteren
 							</label>
 						</div>
-						<div style="display:flex; align-items:center; gap:10px;">
-							<button id="btnBulkInjectBoekje" type="button" style="background:#27ae60; color:white; font-weight:bold; padding:7px 14px; border:none; border-radius:3px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.15);">💾 Geselecteerde opslaan in database</button>
-							<button id="btnBulkDelBoekje" type="button" style="background:#c0392b; color:white; font-weight:bold; padding:7px 14px; border:none; border-radius:3px; cursor:pointer; font-size:13px;">🗑️ Geselecteerde wissen</button>
+						<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+							<button id="btnImportBoekjeOnly" type="button" style="background:#8e44ad; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;" title="Voor de beheerder thuis: laadt enkel de suggesties uit het winkelbestand in">📥 Suggesties inlezen uit bestand</button>
+							<input type="file" id="admBoekjeFileInput" accept=".json" style="display:none;">
+
+							<button id="btnBulkInjectBoekje" type="button" style="background:#27ae60; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.15);">💾 Geselecteerde opslaan in database</button>
+							<button id="btnBulkDelBoekje" type="button" style="background:#c0392b; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;">🗑️ Geselecteerde wissen</button>
 						</div>
 					</div>
 
@@ -496,6 +499,10 @@
 		}
 
 		window.addEventListener('load', function() {
+		// MEET DE HARDE CODEBASIS VÓÓR OVERNAME DOOR LOCALSTORAGE
+			if (typeof merkenLijst !== 'undefined' && !window.hardcodedBasisAantal) {
+				window.hardcodedBasisAantal = merkenLijst.filter(m => m && m.merk && String(m.merk).trim() !== "").length;
+			}
 			if (!localStorage.getItem('zuiderlicht_wachtwoord')) { localStorage.setItem('zuiderlicht_wachtwoord', "Zuiderlicht"); }
 			if (typeof merkenLijst !== 'undefined') {
 				if (!localStorage.getItem('zuiderlicht_db_v6')) { localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(merkenLijst)); }
@@ -505,12 +512,32 @@
 			if (!localStorage.getItem('zuiderlicht_prijzen_v1')) { localStorage.setItem('zuiderlicht_prijzen_v1', JSON.stringify(priceList)); }
 			priceList = JSON.parse(localStorage.getItem('zuiderlicht_prijzen_v1'));
 
-			function getDB() { return JSON.parse(localStorage.getItem('zuiderlicht_db_v6')) || []; }
+			function getDB() { 
+			var raw = JSON.parse(localStorage.getItem('zuiderlicht_db_v6')) || [];
+			return raw.filter(m => m && m.merk && String(m.merk).trim() !== "");
+			}
 			function saveDB(db) { localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(db)); }
 			function getBoekje() { return JSON.parse(localStorage.getItem('zuiderlicht_boekje_v1')) || []; }
 			function saveBoekje(b) { localStorage.setItem('zuiderlicht_boekje_v1', JSON.stringify(b)); }
 			function getPrijzen() { return JSON.parse(localStorage.getItem('zuiderlicht_prijzen_v1')) || {}; }
 			function savePrijzen(p) { localStorage.setItem('zuiderlicht_prijzen_v1', JSON.stringify(p)); }
+
+			// LOGBOEK HULPFUNCTIES
+			function getLogboek() { return JSON.parse(localStorage.getItem('zuiderlicht_logboek_v1')) || []; }
+			function saveLogboek(logs) { localStorage.setItem('zuiderlicht_logboek_v1', JSON.stringify(logs.slice(0, 50))); } // Bewaar de laatste 50 acties
+			function voegLogboekToe(actie, detail) {
+				var logs = getLogboek();
+				var nu = new Date();
+				var datumStr = `${nu.getDate()}-${nu.getMonth()+1}-${nu.getFullYear()} om ${nu.getHours()}:${(nu.getMinutes()<10?'0':'')+nu.getMinutes()}`;
+				var huidigTotaal = getDB().length;
+				logs.unshift({
+					datum: datumStr,
+					actie: actie,
+					detail: detail,
+					totaal: huidigTotaal
+				});
+				saveLogboek(logs);
+			}
 
 			window.herlaadEnBehoudScroll = function() { localStorage.setItem('zuiderlicht_scroll_pos', window.scrollY); localStorage.setItem('zuiderlicht_laatste_zoekopdracht', document.getElementById("searchTxt").value); window.location.reload(); }
 
@@ -560,11 +587,20 @@
 				};
 
 				if (!isIngelogd) {
-					if (wwInput) {
+				if (wwInput) {
 						wwInput.addEventListener('input', function() { window.resetLoginTimer(10000); });
 						wwInput.addEventListener('blur', function() { window.resetLoginTimer(4000); });
 						wwInput.addEventListener('focus', function() { window.resetLoginTimer(10000); });
-					}
+
+						// ENTER-TOETS OM DIRECT IN TE LOGGEN
+						wwInput.addEventListener('keydown', function(e) {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								var loginBtn = document.getElementById('admLoginBtn');
+								if (loginBtn) loginBtn.click();
+							}
+						});
+					}	
 					const magicCorner = document.createElement('div');
 					magicCorner.style.cssText = "position: fixed; top: 0; right: 0; width: 150px; height: 150px; z-index: 9998;";
 					magicCorner.addEventListener('mouseenter', function() { window.toonLoginGeheim(false); });
@@ -689,13 +725,16 @@
 						<button id="admOpenTableBtn" type="button" style="background:#27ae60; color:white; font-weight:bold; padding:8px 15px; border:none; border-radius:3px; cursor:pointer;">📊 Prijslijst Matrix</button>
 						<div style="width:2px; height:30px; background:#fff; opacity:0.3; margin:0 5px;"></div>
 						
-						<!-- DE TWEE BACK-UP & RESTORE KNOPPEN -->
-						<button id="admBackupBtn" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:8px 15px; border:none; border-radius:3px; cursor:pointer;" title="Maak een back-up bestand voor de USB-stick">📥 Back-up</button>
-						<button id="admMergeBtn" type="button" style="background:#8e44ad; color:white; font-weight:bold; padding:8px 15px; border:none; border-radius:3px; cursor:pointer;" title="Laad een bestand in en voeg samen zonder gegevens te verliezen">🔄 Slimme Restore (Samenvoegen)</button>
+						<!-- DE 3 DATA-KNOPPEN (BACK-UP, SAMENVOEGEN & OVERSCHRIJVEN) -->
+						<button id="admBackupBtn" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:3px; cursor:pointer;" title="Maak een back-up bestand voor de USB-stick">📥 Back-up</button>
+						<button id="admMergeBtn" type="button" style="background:#8e44ad; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:3px; cursor:pointer;" title="Voor bestanden van thuis: voegt samen zonder winkel-suggesties te verliezen">🔄 Slimme Restore (Samenvoegen)</button>
+						<button id="admFullRestoreBtn" type="button" style="background:#d35400; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:3px; cursor:pointer;" title="Voor de wekelijkse pc-wissel: maakt van deze computer een exacte 1-op-1 kopie">📤 Volledige Restore (Overschrijven)</button>
+						
 						<input type="file" id="admFileInput" accept=".json" style="display:none;">
+						<input type="file" id="admFullFileInput" accept=".json" style="display:none;">
 
-						<button id="admWwWijzigen" type="button" style="background:none; border:none; color:#bdc3c7; text-decoration:underline; font-size:12px; cursor:pointer; margin-left:auto;">⚙️ Wachtwoord</button>
-					</div>
+						<button id="admLogboekBtn" type="button" style="background:#2c3e50; border:1px solid #7f8c8d; color:#ecf0f1; font-size:13px; font-weight:bold; padding:7px 12px; border-radius:3px; cursor:pointer; margin-left:auto;">⚙️ Beheer & Logboek</button>
+						</div>
 				`;
 
 				const merkenBalk = document.getElementById('balkMerkenActies');
@@ -968,7 +1007,7 @@
 					};
 				}
 
-				// 2. SLIM SAMENVOEGEN VIA BESTANDSKIEZER (USB-STICK VRIENDELIJK)
+				// 2. SLIMME RESTORE (VOOR IN DE WINKEL: NEEMT MERKEN & PRIJZEN OVER, BEHOUDT WINKELBOEKJE)
 				var fileInput = document.getElementById('admFileInput');
 				var mergeBtn = document.getElementById('admMergeBtn');
 				
@@ -991,75 +1030,201 @@
 								var importBoekje = pakket.boekje || [];
 								var importPrijzen = pakket.prijzen;
 
-								var localDB = getDB();
 								var localBoekje = getBoekje();
 
-								// A. BOEKJE SAMENVOEGEN (GEEN DUBBELS, NIETS VERLIEZEN)
-								var nieuwInBoekjeTeller = 0;
+								// A. MERKENLIJST OVERNEMEN VAN BEHEERDER (GEWIST IS GEWIST, NIEUW IS TOEGEVOEGD)
+								var gewijzigdeDB = importDB.filter(m => m && m.merk && String(m.merk).trim() !== "");
+								gewijzigdeDB.sort((a, b) => String(a.merk).localeCompare(String(b.merk), 'nl', { numeric: true, sensitivity: 'base' }));
+								saveDB(gewijzigdeDB);
+
+								// B. PRIJZEN OVERNEMEN VAN BEHEERDER
+								if (importPrijzen && typeof importPrijzen === 'object') {
+									savePrijzen(importPrijzen);
+								}
+
+								// C. HET WINKELBOEKJE VEILIG BEHOUDEN (EN EVENTUEEL AANVULLEN ZONDER DUBBELS)
+								var nieuwInBoekje = 0;
 								importBoekje.forEach(function(nieuwItem) {
 									if (!nieuwItem || !nieuwItem.merk) return;
 									var mNaam = nieuwItem.merk.trim().toLowerCase();
 									var bestaat = localBoekje.some(x => x && x.merk && x.merk.trim().toLowerCase() === mNaam);
 									if (!bestaat) {
 										localBoekje.push(nieuwItem);
-										nieuwInBoekjeTeller++;
+										nieuwInBoekje++;
 									}
 								});
 								saveBoekje(localBoekje);
 
-								// B. MERKENLIJST SAMENVOEGEN & BIJWERKEN
-								var nieuwMerkenTeller = 0;
-								var bijgewerktTeller = 0;
-								importDB.forEach(function(impItem) {
-									if (!impItem || !impItem.merk) return;
-									var mNaam = String(impItem.merk).trim().toLowerCase();
-									var idx = localDB.findIndex(x => x && x.merk && String(x.merk).trim().toLowerCase() === mNaam);
-									
-									if (idx > -1) {
-										localDB[idx] = impItem; // Werk bij met nieuwste gegevens
-										bijgewerktTeller++;
-									} else {
-										localDB.push(impItem); // Voeg nieuw merk toe
-										nieuwMerkenTeller++;
-									}
-								});
-								localDB.sort((a, b) => String(a.merk).localeCompare(String(b.merk), 'nl', { numeric: true, sensitivity: 'base' }));
-								saveDB(localDB);
-
-								// C. PRIJZEN OVERNEMEN
-								if (importPrijzen && typeof importPrijzen === 'object') {
-									savePrijzen(importPrijzen);
-								}
-
-								// D. FEEDBACK BANNER INSTELLEN
-								var meldTekst = `🔄 Succesvol samengevoegd! ${nieuwMerkenTeller} nieuwe merken toegevoegd, ${bijgewerktTeller} bijgewerkt, en ${nieuwInBoekjeTeller} nieuwe suggesties in het boekje opgenomen.`;
+								// D. FEEDBACK EN LOGBOEK
+								var meldTekst = `🔄 Slimme Restore geslaagd! Merkenlijst en prijzen bijgewerkt (${gewijzigdeDB.length} merken). Winkelboekje behouden (+${nieuwInBoekje} suggesties aangevuld).`;
 								localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({
 									tekst: meldTekst,
 									kleur: '#d4edda',
 									rand: '#c3e6cb',
 									tekstKleur: '#155724'
 								}));
+								voegLogboekToe("🔄 Slimme Restore", `Merkenlijst (${gewijzigdeDB.length}) & prijzen bijgewerkt. Boekje behouden.`);
 
-								alert("Samenvoeging voltooid!");
+								alert("Slimme Restore voltooid!");
 								window.location.reload();
 							} catch (err) {
-								alert("Fout bij het inlezen van het bestand: " + err.message);
+								alert("Fout bij inlezen: " + err.message);
 							}
 						};
 						reader.readAsText(file);
-						fileInput.value = ""; // Reset input
+						fileInput.value = "";
+					};
+				}
+				
+				// 2B. VOLLEDIGE RESTORE (1-OP-1 OVERDRACHT VOOR DE WEKELIJKSE WISSEL)
+				var fullFileInput = document.getElementById('admFullFileInput');
+				var fullRestoreBtn = document.getElementById('admFullRestoreBtn');
+
+				if (fullRestoreBtn && fullFileInput) {
+					fullRestoreBtn.onclick = function() { 
+						if (confirm("⚠️ LET OP: VOLLEDIGE RESTORE\n\nDit overschrijft de merkenlijst, het boekje en de prijzen 1-op-1 met het gekozen bestand.\n\nGebruik dit voor de wekelijkse pc-wissel op woensdag!\n\nWil je doorgaan en een bestand kiezen?")) {
+							fullFileInput.click(); 
+						}
+					};
+
+					fullFileInput.onchange = function(e) {
+						var file = e.target.files[0];
+						if (!file) return;
+						var reader = new FileReader();
+						reader.onload = function(evt) {
+							try {
+								var pakket = JSON.parse(evt.target.result);
+								if (!pakket || (!pakket.db && !Array.isArray(pakket))) {
+									alert("Ongeldig back-upbestand.");
+									return;
+								}
+
+								var importDB = pakket.db || (Array.isArray(pakket) ? pakket : []);
+								var importBoekje = pakket.boekje || [];
+								var importPrijzen = pakket.prijzen;
+
+								// 1-op-1 overschrijven (exacte kloon maken)
+								saveDB(importDB);
+								saveBoekje(importBoekje);
+								if (importPrijzen && typeof importPrijzen === 'object') {
+									savePrijzen(importPrijzen);
+								}
+
+								// Registreer dat deze computer nu 100% gelijk is aan de back-up
+								localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'nee');
+								voegLogboekToe("📤 Volledige Restore (Wissel)", `1-op-1 overdracht van ${importDB.length} merken`);
+
+								var meldTekst = `📤 Volledige Restore geslaagd! Deze pc is nu een exacte 1-op-1 kopie van de back-up (${importDB.length} merken, ${importBoekje.length} suggesties).`;
+								localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({
+									tekst: meldTekst,
+									kleur: '#d4edda',
+									rand: '#c3e6cb',
+									tekstKleur: '#155724'
+								}));
+								voegLogboekToe("📤 Volledige Restore (Wissel)", `1-op-1 overdracht van ${importDB.length} merken`);
+
+								alert("Volledige Restore voltooid!");
+								window.location.reload();
+							} catch (err) {
+								alert("Fout bij het inlezen: " + err.message);
+							}
+						};
+						reader.readAsText(file);
+						fullFileInput.value = ""; // Reset
+					};
+				}
+				
+				// FUNCTIE VOOR HET STATISTIEKEN & LOGBOEK VENSTER
+				function openLogboekModal() {
+					var oudModal = document.getElementById('logboekModal');
+					if (oudModal) oudModal.remove();
+
+					var overlay = document.createElement('div');
+					overlay.id = 'logboekModal';
+					overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10002; display:flex; align-items:center; justify-content:center;";
+
+					var db = getDB();
+					var huidigTotaal = db.length;
+					var basisTotaal = window.hardcodedBasisAantal || 0;
+					var verschil = huidigTotaal - basisTotaal;
+					var verschilKleur = verschil >= 0 ? "#27ae60" : "#c0392b";
+					var verschilTeken = verschil >= 0 ? "+" : "";
+
+					var logs = getLogboek();
+					var logHtml = "";
+					if (logs.length === 0) {
+						logHtml = "<div style='text-align:center; padding:25px; color:#888; font-style:italic;'>Nog geen handelingen vastgelegd in het logboek.</div>";
+					} else {
+						logs.forEach(function(l) {
+							logHtml += `
+								<div style="border-bottom:1px solid #eee; padding:10px 6px; font-size:13px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+									<div>
+										<span style="font-weight:bold; color:#2c3e50;">${l.actie}</span>
+										<div style="color:#555; font-size:12px; margin-top:2px;">${l.detail}</div>
+										<div style="color:#888; font-size:11px; margin-top:2px;">📅 ${l.datum}</div>
+									</div>
+									<div style="background:#e8f4d9; border:1px solid #88bc56; color:#27ae60; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; white-space:nowrap;">
+										Totaal: ${l.totaal}
+									</div>
+								</div>
+							`;
+						});
+					}
+
+					overlay.innerHTML = `
+						<div style="background:white; border-radius:8px; padding:25px; width:580px; max-width:92%; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,0.3); font-family:sans-serif; text-align:left;">
+							<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+								<h3 style="font-size:20px; font-weight:800; color:#2c3e50; margin:0;">⚙️ Systeembeheer & Logboek</h3>
+								<button id="closeLogboekModal" type="button" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888; font-weight:bold;">✕</button>
+							</div>
+
+							<!-- 1. MERKEN TELLER / STATISTIEKEN -->
+							<div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
+								<div style="background:#f8f9fa; border:1px solid #ddd; padding:10px; border-radius:5px; text-align:center;">
+									<div style="font-size:11px; color:#666; font-weight:bold; text-transform:uppercase;">Actuele Database</div>
+									<div style="font-size:22px; font-weight:900; color:#2c3e50; margin-top:3px;">${huidigTotaal}</div>
+									<div style="font-size:11px; color:#888;">merken actief</div>
+								</div>
+								<div style="background:#f8f9fa; border:1px solid #ddd; padding:10px; border-radius:5px; text-align:center;">
+									<div style="font-size:11px; color:#666; font-weight:bold; text-transform:uppercase;">Code Basis</div>
+									<div style="font-size:22px; font-weight:900; color:#7f8c8d; margin-top:3px;">${basisTotaal}</div>
+									<div style="font-size:11px; color:#888;">oorspronkelijk</div>
+								</div>
+								<div style="background:#f8f9fa; border:1px solid #ddd; padding:10px; border-radius:5px; text-align:center;">
+									<div style="font-size:11px; color:#666; font-weight:bold; text-transform:uppercase;">Verschil</div>
+									<div style="font-size:22px; font-weight:900; color:${verschilKleur}; margin-top:3px;">${verschilTeken}${verschil}</div>
+									<div style="font-size:11px; color:#888;">t.o.v. de basis</div>
+								</div>
+							</div>
+
+							<!-- 2. HET SCROLLBARE LOGBOEK -->
+							<div style="font-size:13px; font-weight:bold; color:#2c3e50; margin-bottom:6px;">📜 Geschiedenis van aanpassingen:</div>
+							<div style="flex:1; overflow-y:auto; border:1px solid #ddd; border-radius:5px; padding:10px; margin-bottom:15px; background:#fafafa; max-height:260px;">
+								${logHtml}
+							</div>
+
+							<!-- 3. BEHEER & WACHTWOORD -->
+							<div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #eee; padding-top:12px;">
+								<button id="btnWijzigWwInModal" type="button" style="background:#34495e; color:white; border:none; padding:7px 12px; border-radius:3px; font-size:12px; cursor:pointer; font-weight:bold;">🔑 Wachtwoord wijzigen</button>
+								<button id="btnSluitInModal" type="button" style="background:#7f8c8d; color:white; border:none; padding:7px 16px; border-radius:3px; font-size:13px; cursor:pointer; font-weight:bold;">Sluiten</button>
+							</div>
+						</div>
+					`;
+					document.body.appendChild(overlay);
+
+					overlay.querySelector('#closeLogboekModal').onclick = () => overlay.remove();
+					overlay.querySelector('#btnSluitInModal').onclick = () => overlay.remove();
+					overlay.querySelector('#btnWijzigWwInModal').onclick = function() {
+						const n = prompt("Nieuw wachtwoord voor de beheerzone:");
+						if (n && n.trim() !== "") {
+							localStorage.setItem('zuiderlicht_wachtwoord', n.trim());
+							alert("Wachtwoord succesvol gewijzigd!");
+						}
 					};
 				}
 
-				// 3. WACHTWOORD WIJZIGEN BEHOUDEN
-				if (document.getElementById('admWwWijzigen')) {
-					document.getElementById('admWwWijzigen').addEventListener('click', function() { 
-						const n = prompt("Nieuw wachtwoord:"); 
-						if (n && n.trim() !== "") { 
-							localStorage.setItem('zuiderlicht_wachtwoord', n.trim()); 
-							alert("Gewijzigd!"); 
-						} 
-					});
+				if (document.getElementById('admLogboekBtn')) {
+					document.getElementById('admLogboekBtn').onclick = openLogboekModal;
 				}
 
 				// NIEUW MERK TOEVOEGEN (BLIJFT OP DE HUIDIGE SCROLLPOSITIE)
@@ -1149,6 +1314,7 @@
 						
 						// Bewaar enkel welke merken getoond moeten worden en de bannertekst
 						localStorage.setItem('zuiderlicht_toon_pas_opgeslagen', JSON.stringify(opgeslagenNamen)); 
+						voegLogboekToe("➕ Merken bewerkt/toegevoegd", `${opgeslagenNamen.length} merk(en): ${opgeslagenNamen.slice(0, 4).join(', ')}${opgeslagenNamen.length > 4 ? '...' : ''}`);
 						var aantal = opgeslagenNamen.length;
 						var tekst = `✅ ${aantal} ${aantal === 1 ? 'merk' : 'merken'} succesvol opgeslagen: ${opgeslagenNamen.join(', ')}`;
 						localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({ tekst: tekst, kleur: '#d4edda', rand: '#c3e6cb', tekstKleur: '#155724' }));
@@ -1174,6 +1340,7 @@
 							
 							saveDB(clean); 
 							merkenLijst = clean; 
+							voegLogboekToe("🗑️ Merken gewist", `${names.length} merk(en) verwijderd uit hoofdlijst`);
 							localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
 							
 							var tekst = `🗑️ ${names.length} ${names.length === 1 ? 'merk' : 'merken'} succesvol verwijderd: ${names.join(', ')}`;
@@ -1268,6 +1435,7 @@
 					var tekst = `✅ ${aantal} ${aantal === 1 ? 'merk' : 'merken'} vanuit het boekje goedgekeurd & opgeslagen: ${goedgekeurdeMerken.join(', ')}`;
 					localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({ tekst: tekst, kleur: '#d4edda', rand: '#c3e6cb', tekstKleur: '#155724' }));
 					localStorage.setItem("zuiderlicht_boekje_open", "ja");
+					voegLogboekToe("📋 Boekje goedgekeurd", `${goedgekeurdeMerken.length} merk(en) goedgekeurd naar database`);
 					
 					window.location.reload();
 				});
@@ -1291,6 +1459,7 @@
 						});
 						
 						saveBoekje(boekje);
+						voegLogboekToe("🗑️ Boekje opgeschoond", `${gewisteNamen.length} suggestie(s) gewist uit boekje`);
 						
 						var checkAllB = document.getElementById('checkAllBoekje');
 						if (checkAllB) checkAllB.checked = false;
@@ -1308,6 +1477,66 @@
 						}
 					}
 				});
+			}
+
+			// ENKEL SUGGESTIES INLEZEN IN HET BOEKJE (VOOR DE BEHEERDER THUIS)
+			var bImportBtn = document.getElementById('btnImportBoekjeOnly');
+			var bFileInput = document.getElementById('admBoekjeFileInput');
+
+			if (bImportBtn && bFileInput) {
+				bImportBtn.onclick = function() { bFileInput.click(); };
+
+				bFileInput.onchange = function(e) {
+					var file = e.target.files[0];
+					if (!file) return;
+					var reader = new FileReader();
+					reader.onload = function(evt) {
+						try {
+							var pakket = JSON.parse(evt.target.result);
+							var importBoekje = pakket.boekje || (Array.isArray(pakket) ? pakket : []);
+
+							if (!Array.isArray(importBoekje) || importBoekje.length === 0) {
+								alert("Er zijn geen merksuggesties gevonden in dit bestand.");
+								return;
+							}
+
+							var localBoekje = getBoekje();
+							var toegevoegdTeller = 0;
+
+							importBoekje.forEach(function(nieuwItem) {
+								if (!nieuwItem || !nieuwItem.merk) return;
+								var mNaam = nieuwItem.merk.trim().toLowerCase();
+								var bestaat = localBoekje.some(x => x && x.merk && x.merk.trim().toLowerCase() === mNaam);
+								if (!bestaat) {
+									localBoekje.push(nieuwItem);
+									toegevoegdTeller++;
+								}
+							});
+
+							saveBoekje(localBoekje);
+							window.renderBoekjeTabel();
+							window.updateBoekjeTeller();
+
+							voegLogboekToe("📥 Boekje ingelezen", `${toegevoegdTeller} suggesties uit winkelbestand overgenomen`);
+
+							var bMeldBalk = document.getElementById('boekjeFeedbackBalk');
+							if (bMeldBalk) {
+								bMeldBalk.innerText = `📥 ${toegevoegdTeller} nieuwe suggestie(s) uit het winkelbestand ingelezen in het boekje!`;
+								bMeldBalk.style.background = "#d4edda";
+								bMeldBalk.style.borderColor = "#c3e6cb";
+								bMeldBalk.style.color = "#155724";
+								bMeldBalk.style.display = 'block';
+								setTimeout(() => { bMeldBalk.style.display = 'none'; }, 6000);
+							} else {
+								alert(`Succes! ${toegevoegdTeller} nieuwe suggestie(s) toegevoegd aan het boekje.`);
+							}
+						} catch (err) {
+							alert("Fout bij het inlezen van de suggesties: " + err.message);
+						}
+					};
+					reader.readAsText(file);
+					bFileInput.value = "";
+				};
 			}
 
 			window.toggleBoekjeWeergave = function() {
