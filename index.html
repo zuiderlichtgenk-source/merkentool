@@ -27,7 +27,7 @@
 					<label for="merk">Op te zoeken merk: </label><br>
 					<input type="text" id="searchTxt" name="merk" size="50" autofocus><br>
 					<input type="submit" id="zoeken" value="Zoeken!" style="margin-top: 6px; margin-bottom: 14px; padding: 5px 15px; cursor: pointer;"><br>
-					<p id="error" style="color: red; display: none; font-size: 15px; font-weight: 500;">Gelieve minstens 3 letters of #kuis# in te geven.</p>
+					<p id="error" style="color: red; display: none; font-size: 15px; font-weight: 500;">Vul minstens 1 teken in.</p>
 					
 					<!-- GESTROOMLIJND VRIJWILLIGERSBLOK (ZACHT GROEN/BLAUW) -->
 					<div id="vrijwilligerVoorstelBlok" style="display:none; margin: 15px auto; padding: 16px; background: #e8f6f3; border: 2px solid #85b5b5; border-radius: 6px; max-width: 500px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
@@ -301,7 +301,7 @@
 			window.scrollTo(0, 0);
 			
 			let zoekString = document.getElementById("searchTxt").value.trim();
-			if(zoekString.length > 2 || zoekString === "#kuis#" || zoekString === "*admin*") {
+			if(zoekString.length > 0) {
 				var resultaat = filterOpzoeking(zoekString);
 				if (zoekString === "#kuis#" || zoekString === "*admin*") {
 					maakAlphabetBalk(resultaat);
@@ -2013,7 +2013,7 @@
 			verwijderOpzoeking();
 			
 			let zoekString = document.getElementById("searchTxt").value.trim();
-			if(zoekString.length > 2 || zoekString === "#kuis#" || zoekString === "*admin*") {
+			if(zoekString.length > 0) {
 				var resultaat = filterOpzoeking(zoekString);
 				
 				if (zoekString === "#kuis#" || zoekString === "*admin*") {
