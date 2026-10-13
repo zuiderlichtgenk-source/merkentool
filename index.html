@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Merkentool Zuiderlicht v2.09</title>
+	<title>Merkentool Zuiderlicht v2.10</title>
 	<style>
 		a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}body{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}*{box-sizing:border-box}body{background-image:url(./img/achtergrond2.jpg);background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover;font-family:sans-serif;color:#3f3f3f}main{width:80%;min-width:1000px;margin:0 auto;padding-bottom:50px;background-color:rgba(240,240,240,.85);min-height:87vh}main>h1{font-size:28px;text-align:center;font-weight:700;padding-top:15px;}article{width:80%;min-width:800px;min-height:700px;border-radius:3px;background-color:rgba(240,240,240,.5);display:inline-block;text-align:center;padding-bottom:25px;margin:0 auto;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.18)}article>h3{font-size:28px;font-weight:800;margin-bottom:25px}label{font-size:18px}input,select{font-size:16px;padding:5px;}table{width:100% !important;background-color:#d3d3d3;opacity:.8;margin:0 auto;font-size:22px;line-height:22px}table th{font-weight:700;padding:5px;background-color:#a9a9a9;border:2px solid #000}table td{border:1px solid #000;vertical-align:middle;font-size:1.2rem;padding:5px;}tr:nth-child(even){background:rgba(136,188,86,.2)}tr:nth-child(odd){background:#fff}#solidariteit{flex:1 1 65% !important;min-width:600px !important;}
 		.pinned-zoekzone {position: sticky; top: 0; background: #f0f0f0; padding-top: 15px; padding-bottom: 20px; z-index: 100; border-bottom: 2px solid #ccc; margin-bottom: 20px;}
@@ -102,6 +102,7 @@
 
 							<button id="btnBulkInjectBoekje" type="button" style="background:#27ae60; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.15);">💾 Geselecteerde opslaan in database</button>
 							<button id="btnBulkDelBoekje" type="button" style="background:#c0392b; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;">🗑️ Geselecteerde wissen</button>
+							<button id="btnOogstBoekje" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;" title="Winkel: downloadt eerst automatisch een back-up en markeert daarna de nieuwe suggesties als verzonden">📤 Oogst doorsturen</button>
 						</div>
 					</div>
 
@@ -117,6 +118,22 @@
 						<tbody id="boekjeTableBody">
 						</tbody>
 					</table>
+				<div id="boekjeArchiefBlok" style="margin-top:15px; border-top:2px dashed #6c9b9b; padding-top:10px;">
+					<button id="btnToggleArchief" type="button" style="background:transparent; border:none; color:#134e4a; font-weight:bold; font-size:13px; cursor:pointer; padding:5px 0;">▶ Behandeld / verzonden (<span id="boekjeArchiefTeller">0</span>)</button>
+					<div id="boekjeArchiefInhoud" style="display:none; margin-top:10px;">
+						<table style="width:100% !important; background-color:#d3d3d3; opacity:1; margin:0 auto; font-size:16px; line-height:20px;">
+							<tr style="background-color:#6c9b9b; color:white;">
+								<th style="border:2px solid #000; padding:5px;">Merk</th>
+								<th style="border:2px solid #000; padding:5px;">Info</th>
+								<th style="border:2px solid #000; padding:5px;">Status</th>
+								<th style="border:2px solid #000; padding:5px;">Datum</th>
+								<th style="border:2px solid #000; padding:5px;">Actie</th>
+							</tr>
+							<tbody id="boekjeArchiefBody">
+							</tbody>
+						</table>
+					</div>
+				</div>
 				</div>
 			</article>
 		</main>
@@ -583,6 +600,44 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 			function saveDB(db) { localStorage.setItem('zuiderlicht_db_v6', JSON.stringify(db)); }
 			function getBoekje() { return JSON.parse(localStorage.getItem('zuiderlicht_boekje_v1')) || []; }
 			function saveBoekje(b) { localStorage.setItem('zuiderlicht_boekje_v1', JSON.stringify(b)); }
+			function getBoekjeArchief() { return JSON.parse(localStorage.getItem('zuiderlicht_boekje_archief_v1')) || []; }
+			function saveBoekjeArchief(a) { localStorage.setItem('zuiderlicht_boekje_archief_v1', JSON.stringify(a)); }
+			function boekjeVandaag() { var n = new Date(); return n.getFullYear() + '-' + (n.getMonth() + 1) + '-' + n.getDate(); }
+			function boekjeStatus(v) { return (v && v.status) ? v.status : 'nieuw'; }
+			// Voegt suggesties toe; alleen exacte dubbels (merk+info+sterren) en reeds behandelde worden overgeslagen.
+			function boekjeOverschrijfConflicten(selectie, db) {
+				function nv(v){ return String(v === null || v === undefined ? "" : v).trim().toLowerCase(); }
+				var lijst = [];
+				(selectie || []).forEach(function(s){
+					var naam = String(s.merk || "").trim(); if (!naam) return;
+					var info = String(s.info || "").trim().toLowerCase();
+					var i = db.findIndex(function(x){ return x && String(x.merk).trim().toLowerCase() === naam.toLowerCase() && String(x.info || "").trim().toLowerCase() === info; });
+					if (i === -1) return;
+					var oud = db[i]; var v = [];
+					if (nv(oud.sterren) !== nv(s.sterren)) v.push("sterren " + (String(oud.sterren || "").trim() || "—") + " → " + (String(s.sterren || "").trim() || "—"));
+					if (nv(oud.type) !== nv(s.type || "")) v.push("type \"" + String(oud.type || "").trim().slice(0, 30) + "\" → \"" + String(s.type || "").trim().slice(0, 30) + "\"");
+					if (v.length > 0) lijst.push({ merk: String(oud.merk).trim(), verschillen: v });
+				});
+				return lijst;
+			}
+			function boekjeUnion(doel, inkomend, archief) {
+				var telling = { toegevoegd: 0, overgeslagen: 0 };
+								var sleutelVan = function(r){ return String(r.merk).trim().toLowerCase() + "|" + String(r.info || "").trim().toLowerCase() + "|" + String(r.sterren || "").trim().toLowerCase(); };
+				var gezien = {};
+				doel.forEach(function(x) { if (x && x.merk) gezien[sleutelVan(x)] = true; });
+				var arch = {};
+				(archief || []).forEach(function(x) { if (x && x.merk) arch[sleutelVan(x)] = true; });
+				(inkomend || []).forEach(function(nw) {
+					if (!nw || !nw.merk) return;
+					var naam = String(nw.merk).trim(); if (!naam) return;
+					var sleutel = String(nw.merk).trim().toLowerCase() + "|" + String(nw.info || "").trim().toLowerCase() + "|" + String(nw.sterren || "").trim().toLowerCase();
+					if (gezien[sleutel] || arch[sleutel]) { telling.overgeslagen++; return; }
+					gezien[sleutel] = true;
+					doel.push({ merk: naam, info: String(nw.info || '').trim(), sterren: String(nw.sterren || '').trim(), status: 'nieuw', datum: String(nw.datum || boekjeVandaag()).trim() });
+					telling.toegevoegd++;
+				});
+				return telling;
+			}
 			function getPrijzen() { return JSON.parse(localStorage.getItem('zuiderlicht_prijzen_v1')) || {}; }
 			function savePrijzen(p) { localStorage.setItem('zuiderlicht_prijzen_v1', JSON.stringify(p)); }
 
@@ -1081,6 +1136,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							db: getDB(), 
 							boekje: getBoekje(), 
 							prijzen: getPrijzen(), 
+							archief: getBoekjeArchief(),
 							/* ww bewust weggelaten: inlogcode blijft lokaal per pc en reist niet mee met de back-up */ 
 						};
 						var nu = new Date();
@@ -1131,21 +1187,15 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 									savePrijzen(importPrijzen);
 								}
 
-								// C. HET WINKELBOEKJE VEILIG BEHOUDEN (EN EVENTUEEL AANVULLEN ZONDER DUBBELS)
-								var nieuwInBoekje = 0;
-								importBoekje.forEach(function(nieuwItem) {
-									if (!nieuwItem || !nieuwItem.merk) return;
-									var mNaam = nieuwItem.merk.trim().toLowerCase();
-									var bestaat = localBoekje.some(x => x && x.merk && x.merk.trim().toLowerCase() === mNaam);
-									if (!bestaat) {
-										localBoekje.push(nieuwItem);
-										nieuwInBoekje++;
-									}
-								});
-								saveBoekje(localBoekje);
+															// C. HET WINKELBOEKJE VEILIG BEHOUDEN (EN EVENTUEEL AANVULLEN ZONDER DUBBELS)
+							var unionSlim = boekjeUnion(localBoekje, importBoekje, getBoekjeArchief());
+							var nieuwInBoekje = unionSlim.toegevoegd;
+							var overgeslagenSlim = unionSlim.overgeslagen;
+							saveBoekje(localBoekje);
 
 								// D. FEEDBACK EN LOGBOEK
-								var meldTekst = `🔄 Slimme Restore geslaagd! Merkenlijst en prijzen bijgewerkt (${gewijzigdeDB.length} merken). Winkelboekje behouden (+${nieuwInBoekje} suggesties aangevuld).`;
+								var slimExtra = overgeslagenSlim > 0 ? `, ${overgeslagenSlim} overgeslagen (al behandeld)` : "";
+								var meldTekst = `🔄 Slimme Restore geslaagd! Merkenlijst en prijzen bijgewerkt (${gewijzigdeDB.length} merken). Winkelboekje behouden (+${nieuwInBoekje} suggesties aangevuld${slimExtra}).`;
 								localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({
 									tekst: meldTekst,
 									kleur: '#d4edda',
@@ -1240,6 +1290,22 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 								var importBoekje = pakket.boekje || [];
 								var importPrijzen = pakket.prijzen;
 
+																var _lokaalBoekje = getBoekje().filter(function(x){ return x && x.merk && String(x.merk).trim() !== "" && boekjeStatus(x) === "nieuw"; });
+								var _bestandNamen = {};
+								(importBoekje || []).forEach(function(x){ if (x && x.merk) _bestandNamen[String(x.merk).trim().toLowerCase()] = true; });
+								var _nietGeoogst = _lokaalBoekje.filter(function(x){ return !_bestandNamen[String(x.merk).trim().toLowerCase()]; });
+								if (_nietGeoogst.length > 0) {
+									var _voorbeelden = _nietGeoogst.slice(0, 8).map(function(x){ return String(x.merk).trim(); }).join(", ");
+									window.toonBevestiging({
+									titel: "Niet-overgenomen suggesties",
+									tekst: `Dit toestel bevat <strong>${_nietGeoogst.length}</strong> suggestie(s) die NIET in het gekozen bestand staan:<br><br><em>${_voorbeelden}${_nietGeoogst.length > 8 ? ", …" : ""}</em><br><br>Klik op Annuleren en maak eerst een Back-up (oogst), of ga toch door met overschrijven.`,
+									knopTekst: "Toch overschrijven",
+									knopKleur: "#d35400",
+									icoon: "⚠️",
+									}, function() { doorgaanMetOverschrijven(); });
+									return;
+								}
+								function doorgaanMetOverschrijven() {
 								// 1-op-1 overschrijven (exacte kloon maken)
 								saveDB(importDB);
 								saveBoekje(importBoekje);
@@ -1260,6 +1326,8 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 
 								// Direct herladen zonder tussenkomst van extra pop-up meldingen
 								window.location.reload();
+								} // einde doorgaanMetOverschrijven
+								doorgaanMetOverschrijven();
 							} catch (err) {
 								alert("Fout bij het inlezen: " + err.message);
 							}
@@ -1573,9 +1641,18 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							return; 
 						}
 						
+						var _teWissen = Array.from(checks).map(function(c){ return String(c.value || ""); });
+						var _gezienW = {}; var _multi = [];
+						var _dbW = getDB();
+						_teWissen.forEach(function(nm){
+							var sleutelW = nm.toLowerCase(); if (!sleutelW || _gezienW[sleutelW]) return; _gezienW[sleutelW] = true;
+							var aantalW = _dbW.filter(function(m){ return m && m.merk && String(m.merk).toLowerCase() === sleutelW; }).length;
+							if (aantalW > 1) _multi.push(nm.trim() + " (" + aantalW + " rijen)");
+						});
+						var _variantWaarschuwing = _multi.length > 0 ? "<br><br>⚠️ Let op, dit wist ook varianten: " + _multi.slice(0, 8).join(", ") + (_multi.length > 8 ? ", …" : "") + "." : "";
 						window.toonBevestiging({
 							titel: "Merken definitief wissen",
-							tekst: `Weet je zeker dat je deze <strong>${checks.length}</strong> geselecteerde merk(en) wilt wissen uit de database?`,
+							tekst: `Weet je zeker dat je deze <strong>${checks.length}</strong> geselecteerde merk(en) wilt wissen uit de database?${_variantWaarschuwing}`,
 							knopTekst: "🗑️ Ja, geselecteerde merken wissen",
 							knopKleur: "#e74c3c",
 							icoon: "🗑️"
@@ -1612,13 +1689,15 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 
 			window.updateBoekjeTeller = function() {
 				const teller = document.getElementById("admBoekjeTeller");
-				if (teller) { const aantal = getBoekje().length; teller.innerText = aantal; teller.style.background = aantal > 0 ? "#e74c3c" : "transparent"; teller.style.color = aantal > 0 ? "#fff" : "#000"; }
+				if (teller) { const aantal = getBoekje().filter(function(x){ return boekjeStatus(x) === "nieuw"; }).length; teller.innerText = aantal; teller.style.background = aantal > 0 ? "#e74c3c" : "transparent"; teller.style.color = aantal > 0 ? "#fff" : "#000"; }
 			};
 
-			window.renderBoekjeTabel = function() {
+						window.renderBoekjeTabel = function() {
 				const body = document.getElementById("boekjeTableBody"); if (!body) return; const boekje = getBoekje(); body.innerHTML = "";
-				if (boekje.length === 0) { body.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; font-style:italic; background:#fff; color:#666;'>Het boekje is leeg.</td></tr>"; return; }
+				var nieuwAantal = 0;
 				boekje.forEach(function(item, index) {
+					if (boekjeStatus(item) !== "nieuw") return;
+					nieuwAantal++;
 					const tr = document.createElement("tr"); tr.className = "resultRow";
 					tr.innerHTML = `
 						<td style="text-align:center; width:50px; border:1px solid #000;"><input type="checkbox" class="kuisBoekjeCheck" value="${index}" style="transform:scale(1.3); cursor:pointer;"></td>
@@ -1628,6 +1707,42 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					`;
 					body.appendChild(tr);
 				});
+				if (nieuwAantal === 0) { body.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; font-style:italic; background:#fff; color:#666;'>Het boekje is leeg.</td></tr>"; }
+				const aBody = document.getElementById("boekjeArchiefBody");
+				if (aBody) {
+					const archief = getBoekjeArchief();
+					aBody.innerHTML = "";
+					archief.forEach(function(item, index) {
+						const label = boekjeStatus(item) === "toegevoegd" ? "✅ Toegevoegd" : (boekjeStatus(item) === "verwijderd" ? "🗑️ Verwijderd" : (boekjeStatus(item) === "verzonden" ? "📤 Verzonden" : "🆕 Nieuw"));
+						const tr = document.createElement("tr");
+						tr.innerHTML = `
+							<td style="border:1px solid #000; padding:6px; font-weight:bold;">${item.merk || ''}</td>
+							<td style="border:1px solid #000; padding:6px;">${item.info || ''}</td>
+							<td style="border:1px solid #000; padding:6px;">${label}</td>
+							<td style="border:1px solid #000; padding:6px;">${item.datum || '—'}</td>
+							<td style="border:1px solid #000; padding:6px; text-align:center;"><button type="button" class="archiefHeropenBtn" data-idx="${index}" style="background:#8e44ad; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer; font-size:12px; font-weight:bold;">↩ Opnieuw openen</button></td>
+						`;
+						aBody.appendChild(tr);
+					});
+					if (archief.length === 0) { aBody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; font-style:italic; background:#fff; color:#666;'>Nog geen behandelde suggesties.</td></tr>"; }
+					aBody.onclick = function(e) {
+						var knop = (e.target && e.target.closest) ? e.target.closest('.archiefHeropenBtn') : null;
+						if (!knop) return;
+						var archief = getBoekjeArchief();
+						var idx = parseInt(knop.getAttribute('data-idx'), 10);
+						var item = archief[idx]; if (!item || !item.merk) return;
+						var naam = String(item.merk).trim(); if (!naam) return;
+						var b = getBoekje();
+						if (!b.some(function(x){ return x && x.merk && String(x.merk).trim().toLowerCase() === naam.toLowerCase() && String(x.info || "").trim().toLowerCase() === String(item.info || "").trim().toLowerCase() && String(x.sterren || "").trim().toLowerCase() === String(item.sterren || "").trim().toLowerCase(); })) {
+							b.push({ merk: naam, info: String(item.info || ''), sterren: String(item.sterren || ''), status: 'nieuw', datum: boekjeVandaag() });
+							saveBoekje(b);
+						}
+						archief.splice(idx, 1); saveBoekjeArchief(archief);
+						window.renderBoekjeTabel(); window.updateBoekjeTeller();
+					};
+				}
+				const aTeller = document.getElementById("boekjeArchiefTeller");
+				if (aTeller) aTeller.innerText = String(getBoekjeArchief().length);
 			};
 
 			// ALLES SELECTEREN IN HOOFDLIJST
@@ -1642,11 +1757,11 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 			// ALLES SELECTEREN IN BOEKJE
 			var checkAllB = document.getElementById('checkAllBoekje');
 			if (checkAllB) {
-				checkAllB.onchange = function() {
-					var isChecked = this.checked;
-					document.querySelectorAll('#boekjeTableBody .kuisBoekjeCheck').forEach(cb => cb.checked = isChecked);
-				};
+				var isChecked = this.checked;
+				document.querySelectorAll('#boekjeTableBody .kuisBoekjeCheck').forEach(cb => cb.checked = isChecked);
 			}
+			var archiefToggle = document.getElementById('btnToggleArchief');
+			if (archiefToggle) { archiefToggle.onclick = function() { var inh = document.getElementById('boekjeArchiefInhoud'); if (!inh) return; var open = inh.style.display !== 'none'; inh.style.display = open ? 'none' : 'block'; var tk = this.firstChild; if (tk) tk.textContent = (open ? '▶ ' : '▼ '); }; }
 
 			// OPSLAAN VANUIT HET BOEKJE MET SLIMME FEEDBACK
 			if (document.getElementById('btnBulkInjectBoekje')) {
@@ -1668,7 +1783,28 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					var boekje = getBoekje();
 					var db = getDB();
 					var goedgekeurdeMerken = [];
-					var wisIndices = Array.from(bChecks).map(c => parseInt(c.value)).sort((a,b) => b - a);
+					if (!window._boekjeOverschrijfOK) {
+						var _sel = [];
+						bChecks.forEach(function(c){
+							var _tr = document.querySelector('.kuisBoekjeCheck[value="' + c.value + '"]');
+							_tr = _tr ? _tr.closest('tr') : null; if (!_tr) return;
+							var _m = _tr.querySelector('.edit-boekje-merk'), _s = _tr.querySelector('.edit-boekje-sterren'), _i = _tr.querySelector('.edit-boekje-info');
+							_sel.push({ merk: _m ? _m.innerText.trim() : "", sterren: _s ? _s.innerText.trim() : "", info: _i ? _i.innerText.trim() : "" });
+						});
+						var _conf = boekjeOverschrijfConflicten(_sel, getDB());
+						if (_conf.length > 0) {
+							var _reg = _conf.slice(0, 8).map(function(x){ return "• " + x.merk + " (" + x.verschillen.join("; ") + ")"; }).join("<br>");
+							window.toonBevestiging({
+								titel: "Overschrijft bestaande rijen",
+								tekst: `Sommige voorstellen overschrijven een bestaande rij met <strong>andere</strong> gegevens:<br><br>${_reg}${_conf.length > 8 ? "<br>…" : ""}<br><br>Toch overschrijven met de goedgekeurde waarden?`,
+								knopTekst: "Toch overschrijven",
+								knopKleur: "#d35400",
+								icoon: "⚠️"
+							}, function(){ window._boekjeOverschrijfOK = true; document.getElementById('btnBulkInjectBoekje').click(); });
+							return;
+						}
+					} else { window._boekjeOverschrijfOK = false; }
+						var wisIndices = Array.from(bChecks).map(c => parseInt(c.value)).sort((a,b) => b - a);
 					
 					wisIndices.forEach(idx => {
 						var tr = document.querySelector(`.kuisBoekjeCheck[value="${idx}"]`).closest('tr');
@@ -1676,11 +1812,14 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						var newSterren = tr.querySelector('.edit-boekje-sterren').innerText.trim();
 						var newInfo = tr.querySelector('.edit-boekje-info').innerText.trim();
 						
-						if(newMerk !== "") {
+												if(newMerk !== "") {
 							goedgekeurdeMerken.push(newMerk);
 							var newItem = { "merk": newMerk, "sterren": newSterren, "info": newInfo, "type": "", "werknemer": "Beheer" };
-							var bestaat = db.findIndex(x => x && String(x.merk).toLowerCase() === newMerk.toLowerCase());
+							var bestaat = db.findIndex(x => x && String(x.merk).trim().toLowerCase() === newMerk.toLowerCase() && String(x.info || "").trim().toLowerCase() === newInfo.toLowerCase());
 							if (bestaat > -1) { db[bestaat] = newItem; } else { db.push(newItem); }
+							var archiefGoed = getBoekjeArchief();
+							archiefGoed.push({ "merk": newMerk, "sterren": newSterren, "info": newInfo, "status": "toegevoegd", "datum": boekjeVandaag() });
+							saveBoekjeArchief(archiefGoed);
 						}
 						boekje.splice(idx, 1);
 					});
@@ -1720,7 +1859,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					
 					window.toonBevestiging({
 						titel: "Suggesties uit boekje wissen",
-						tekst: `Weet je zeker dat je deze <strong>${bChecks.length}</strong> voorstel(len) definitief wilt verwijderen uit het boekje?`,
+						tekst: `Weet je zeker dat je deze <strong>${bChecks.length}</strong> voorstel(len) verplaatsen naar het behandeld-logboek? (Ze verdwijnen uit de werklijst maar blijven bewaard.)`,
 						knopTekst: "🗑️ Ja, verwijder uit boekje",
 						knopKleur: "#c0392b",
 						icoon: "📋"
@@ -1728,15 +1867,16 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						var boekje = getBoekje();
 						var indices = Array.from(bChecks).map(c => parseInt(c.value)).sort((a, b) => b - a);
 						
-						var gewisteNamen = [];
+												var gewisteNamen = [];
+						var archiefWis = getBoekjeArchief();
 						indices.forEach(idx => {
-							if (boekje[idx] && boekje[idx].merk) gewisteNamen.push(boekje[idx].merk);
+							if (boekje[idx] && boekje[idx].merk) { gewisteNamen.push(boekje[idx].merk); archiefWis.push({ "merk": String(boekje[idx].merk).trim(), "info": String(boekje[idx].info || "").trim(), "status": "verwijderd", "datum": boekjeVandaag() }); }
 							boekje.splice(idx, 1);
 						});
-						
-						saveBoekje(boekje);
+						saveBoekjeArchief(archiefWis);
+												saveBoekje(boekje);
 						localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-						voegLogboekToe("🗑️ Boekje opgeschoond", `${gewisteNamen.length} suggestie(s) gewist uit boekje`);
+						voegLogboekToe("🗑️ Boekje opgeschoond", `${gewisteNamen.length} suggestie(s) verplaatst naar behandeld-logboek`);
 						
 						var checkAllB = document.getElementById('checkAllBoekje');
 						if (checkAllB) checkAllB.checked = false;
@@ -1777,27 +1917,21 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							}
 
 							var localBoekje = getBoekje();
-							var toegevoegdTeller = 0;
-
-							importBoekje.forEach(function(nieuwItem) {
-								if (!nieuwItem || !nieuwItem.merk) return;
-								var mNaam = nieuwItem.merk.trim().toLowerCase();
-								var bestaat = localBoekje.some(x => x && x.merk && x.merk.trim().toLowerCase() === mNaam);
-								if (!bestaat) {
-									localBoekje.push(nieuwItem);
-									toegevoegdTeller++;
-								}
-							});
-
+														var verzondenUitArchief = [];
+							(pakket.archief || []).forEach(function(a){ if (a && a.merk && boekjeStatus(a) === "verzonden") verzondenUitArchief.push(a); });
+							var unionIn = boekjeUnion(localBoekje, (importBoekje || []).concat(verzondenUitArchief), getBoekjeArchief());
+							var toegevoegdTeller = unionIn.toegevoegd;
+							var overgeslagenTeller = unionIn.overgeslagen;
 							saveBoekje(localBoekje);
 							window.renderBoekjeTabel();
 							window.updateBoekjeTeller();
 
-							voegLogboekToe("📥 Boekje ingelezen", `${toegevoegdTeller} suggesties uit winkelbestand overgenomen`);
+							voegLogboekToe("📥 Boekje ingelezen", `${toegevoegdTeller} suggesties uit winkelbestand overgenomen${overgeslagenTeller > 0 ? ` (${overgeslagenTeller} overgeslagen: al behandeld)` : ""}`);
 
 							var bMeldBalk = document.getElementById('boekjeFeedbackBalk');
 							if (bMeldBalk) {
-								bMeldBalk.innerText = `📥 ${toegevoegdTeller} nieuwe suggestie(s) uit het winkelbestand ingelezen in het boekje!`;
+								var inExtra = overgeslagenTeller > 0 ? ` (${overgeslagenTeller} overgeslagen: al behandeld)` : "";
+								bMeldBalk.innerText = `📥 ${toegevoegdTeller} nieuwe suggestie(s) uit het winkelbestand ingelezen in het boekje!${inExtra}`;
 								bMeldBalk.style.background = "#d4edda";
 								bMeldBalk.style.borderColor = "#c3e6cb";
 								bMeldBalk.style.color = "#155724";
@@ -1815,6 +1949,31 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 				};
 			}
 
+						// OOGST DOORSTUREN (WINKEL): BACK-UP DOWNLOADEN + NIEUWE SUGGESTIES ALS VERZONDEN MARKEREN
+			if (document.getElementById('btnOogstBoekje')) {
+				document.getElementById('btnOogstBoekje').onclick = function() {
+					var b = getBoekje();
+					var nieuw = b.filter(function(x){ return x && x.merk && String(x.merk).trim() !== "" && boekjeStatus(x) === "nieuw"; });
+					var bMeldBalk = document.getElementById('boekjeFeedbackBalk');
+					function oogstMelding(tekst, ok) { if (!bMeldBalk) { alert(tekst); return; } bMeldBalk.innerText = tekst; bMeldBalk.style.background = ok ? "#d4edda" : "#fff3cd"; bMeldBalk.style.borderColor = ok ? "#c3e6cb" : "#ffeeba"; bMeldBalk.style.color = ok ? "#155724" : "#856404"; bMeldBalk.style.display = 'block'; setTimeout(function(){ bMeldBalk.style.display = 'none'; }, 6000); }
+					if (nieuw.length === 0) { oogstMelding("Er staan geen nieuwe suggesties klaar om door te sturen.", false); return; }
+					var backupKnop = document.getElementById('admBackupBtn');
+					if (backupKnop) backupKnop.click();
+					var rest = [];
+					var archief = getBoekjeArchief();
+					b.forEach(function(x){
+						if (x && x.merk && String(x.merk).trim() !== "" && boekjeStatus(x) === "nieuw") {
+							archief.push({ merk: String(x.merk).trim(), info: String(x.info || "").trim(), sterren: String(x.sterren || "").trim(), status: "verzonden", datum: boekjeVandaag() });
+						} else { rest.push(x); }
+					});
+					saveBoekje(rest);
+					saveBoekjeArchief(archief);
+					localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+					voegLogboekToe("📤 Oogst doorgestuurd", nieuw.length + " suggestie(s) als verzonden gemarkeerd");
+					window.renderBoekjeTabel(); window.updateBoekjeTeller();
+					oogstMelding("📤 Back-up gedownload en " + nieuw.length + " suggestie(s) als verzonden gemarkeerd.", true);
+				};
+			}
 			window.toggleBoekjeWeergave = function() {
 				const sectie = document.getElementById("boekjeSplitSectie");
 				if (sectie.style.display === "none") { sectie.style.display = "block"; localStorage.setItem("zuiderlicht_boekje_open", "ja"); window.renderBoekjeTabel(); setTimeout(() => sectie.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100); } 
@@ -1864,7 +2023,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 
 						// 2. MERK STAAT AL IN HET BOEKJE (ZONDER POP-UP)
 						var b = getBoekje();
-						if (b.some(item => item && item.merk && item.merk.toLowerCase() === m.toLowerCase())) {
+						if (b.some(item => item && item.merk && String(item.merk).trim().toLowerCase() === m.toLowerCase() && String(item.info || "").trim().toLowerCase() === inf.toLowerCase())) {
 							if (melding) {
 								melding.innerText = `ℹ️ "${m}" staat al genoteerd in het boekje!`;
 								melding.style.background = "#fff3cd";
@@ -1881,11 +2040,19 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						}
 
 						// 3. SUCCESVOL TOEVOEGEN
-						b.push({ "merk": m, "info": inf });
+						var archiefCheck = getBoekjeArchief();
+						var eerderBehandeld = null;
+						for (var ai = 0; ai < archiefCheck.length; ai++) { var ax = archiefCheck[ai]; if (ax && ax.merk && String(ax.merk).trim().toLowerCase() === m.toLowerCase()) { eerderBehandeld = ax; break; }
+						var variantVan = null;
+						for (var vi = 0; vi < b.length; vi++) { var vx = b[vi]; if (vx && vx.merk && String(vx.merk).trim().toLowerCase() === m.toLowerCase() && String(vx.info || "").trim().toLowerCase() !== inf.toLowerCase()) { variantVan = vx; break; } } }
+						b.push({ "merk": m, "info": inf, "status": "nieuw", "datum": boekjeVandaag() });
 						saveBoekje(b);
 
 						if (melding) {
-							melding.innerText = `✨ "${m}" is in het boekje genoteerd! Bedankt voor de hulp.`;
+							if (eerderBehandeld && eerderBehandeld.status === "verzonden") { melding.innerText = `✨ "${m}" is genoteerd! (Al doorgestuurd naar de beheerder op ${eerderBehandeld.datum || "onbekende datum"} — hoeft niet opnieuw.)`; }
+							else if (typeof variantVan !== "undefined" && variantVan) { melding.innerText = `✨ "${m}" is als variant genoteerd (staat er al met andere info).`; }
+							else if (eerderBehandeld) { melding.innerText = `✨ "${m}" is genoteerd! (Eerder behandeld (${boekjeStatus(eerderBehandeld)}) op ${eerderBehandeld.datum || "onbekende datum"}.)`; }
+							else { melding.innerText = `✨ "${m}" is in het boekje genoteerd! Bedankt voor de hulp.`; }
 							melding.style.background = "#d4edda";
 							melding.style.color = "#155724";
 							melding.style.display = 'block';
