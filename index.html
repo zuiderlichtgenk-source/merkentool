@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Merkentool Zuiderlicht v2.14 (build 2026-10-13d)</title>
+	<title>Merkentool Zuiderlicht v2.17 (build 2026-10-20d)</title>
 	<style>
 		a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}body{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}*{box-sizing:border-box}body{background-image:url(./img/achtergrond2.jpg);background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover;font-family:sans-serif;color:#3f3f3f}main{width:80%;min-width:1000px;margin:0 auto;padding-bottom:50px;background-color:rgba(240,240,240,.85);min-height:87vh}main>h1{font-size:28px;text-align:center;font-weight:700;padding-top:15px;}article{width:80%;min-width:800px;min-height:700px;border-radius:3px;background-color:rgba(240,240,240,.5);display:inline-block;text-align:center;padding-bottom:25px;margin:0 auto;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.18)}article>h3{font-size:28px;font-weight:800;margin-bottom:25px}label{font-size:18px}input,select{font-size:16px;padding:5px;}table{width:100% !important;background-color:#d3d3d3;opacity:.8;margin:0 auto;font-size:22px;line-height:22px}table th{font-weight:700;padding:5px;background-color:#a9a9a9;border:2px solid #000}table td{border:1px solid #000;vertical-align:middle;font-size:1.2rem;padding:5px;}tr:nth-child(even){background:rgba(136,188,86,.2)}tr:nth-child(odd){background:#fff}#solidariteit{flex:1 1 65% !important;min-width:600px !important;}
 		.pinned-zoekzone {position: sticky; top: 0; background: #f0f0f0; padding-top: 15px; padding-bottom: 20px; z-index: 100; border-bottom: 2px solid #ccc; margin-bottom: 20px;}
@@ -294,8 +294,27 @@
 		// Let op: een fout getypte code is niet te onderscheiden van een merknaam en geeft dus gewoon zoekresultaten.
 		function probeerInloggenViaZoekveld(zoekString) {
 			try {
-				if (localStorage.getItem("zuiderlicht_ingelogd") === "ja") return false;
 				var ww = localStorage.getItem("zuiderlicht_wachtwoord") || "";
+				var veld = document.getElementById("searchTxt");
+				var ruw = veld ? veld.value.trim() : "";
+
+				// Als je al ingelogd bent en toch je wachtwoord intypt:
+				if (localStorage.getItem("zuiderlicht_ingelogd") === "ja") {
+					if (ww && (zoekString.toLowerCase() === ww.toLowerCase() || ruw.toLowerCase() === ww.toLowerCase())) {
+						if (veld) veld.value = "";
+						var meldingsBalk = document.getElementById('opslagFeedbackBalk');
+						if (meldingsBalk) {
+							meldingsBalk.innerText = "ℹ️ Je bent al ingelogd als beheerder.";
+							meldingsBalk.style.background = "#d1ecf1";
+							meldingsBalk.style.borderColor = "#bee5eb";
+							meldingsBalk.style.color = "#0c5460";
+							meldingsBalk.style.display = 'block';
+							setTimeout(() => { meldingsBalk.style.display = 'none'; }, 3000);
+						}
+						return true; // Stop direct: zoek dit nooit als kledingmerk!
+					}
+					return false;
+				}
 				if (!ww) return false;
 				var veld = document.getElementById("searchTxt");
 				var ruw = veld ? veld.value : "";
@@ -344,6 +363,21 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 
 		function toonZoekopdracht(results){
 			if (!results || results.length === 0){
+				var gezochteNaam = document.getElementById("searchTxt").value.trim();
+				var isBeheerCommando = (gezochteNaam.toLowerCase() === "#kuis#" || gezochteNaam.toLowerCase() === "*admin*");
+				var isAlphaActief = (document.getElementById("alphabetBar") && document.getElementById("alphabetBar").style.display === "flex");
+
+				// In beheermodus of alfabetmodus NOOIT de boekjeknop tonen
+				if (isBeheerCommando || isAlphaActief) {
+					var tabel = document.getElementById("resultTable");
+					var isIngelogd = localStorage.getItem('zuiderlicht_ingelogd') === 'ja';
+					var legeRij = document.createElement("tr");
+					legeRij.innerHTML = `<td colspan="${isIngelogd ? 4 : 3}" style="text-align:center; padding:20px; font-style:italic; background:#fff; color:#888;">Geen merken gevonden onder deze letter.</td>`;
+					tabel.appendChild(legeRij);
+					tabel.style.display = "";
+					return;
+				}
+
 				maakZoekresultaatLijst(geenResultaatObject["merk"], geenResultaatObject["sterren"], geenResultaatObject["info"]);
 				
 				if (localStorage.getItem('zuiderlicht_ingelogd') === 'ja') {
@@ -355,8 +389,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					laatsteRij.insertBefore(legeKuisCel, laatsteRij.firstChild);
 				}
 
-				var gezochteNaam = document.getElementById("searchTxt").value.trim();
-				if (gezochteNaam !== "" && gezochteNaam.toLowerCase() !== "#kuis#") {
+				if (gezochteNaam !== "") {
 					var tabel = document.getElementById("resultTable");
 					var knopCel = document.createElement("td");
 					knopCel.setAttribute("colspan", "4");
@@ -442,12 +475,13 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 			}
 		});
 
-		function maakZoekresultaatLijst(text, sterren, info){
+		 function maakZoekresultaatLijst(text, sterren, info){
 			var isIngelogd = localStorage.getItem('zuiderlicht_ingelogd') === 'ja';
 			var resultaatRij = document.createElement("tr");
 			resultaatRij.setAttribute("class", "resultRow");
 			resultaatRij.setAttribute("data-merk", text);
-			resultaatRij.setAttribute("data-sterren", sterren); 
+			resultaatRij.setAttribute("data-sterren", sterren || ""); 
+			resultaatRij.setAttribute("data-info", info || "");
 			
 			var selectCel = document.createElement("td");
 			selectCel.className = "tdSelectCell"; selectCel.style.cssText = "text-align:center; display:none; width:50px; border: 1px solid #000;";
@@ -972,35 +1006,128 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							var newPriceList = {}; newPriceList[newCat] = []; Object.keys(priceList).forEach(k => { newPriceList[k] = priceList[k]; });
 							priceList = newPriceList; savePrijzen(priceList); window.renderPriceMatrix();
 						};
+						
+						// UNIVERSELE FUNCTIE VOOR HET VERPLAATSEN VAN ARTIKELEN (MET BEHOUD VAN SCROLL)
+						function verplaatsArtikelen(richting, specifiekeCat = null) {
+							var scrollPos = tableContainer.scrollTop;
+							var cats = specifiekeCat ? [specifiekeCat] : Object.keys(priceList);
+							var isVerplaatst = false;
+							var herstelVinkjes = [];
+
+							cats.forEach(function(cat) {
+								var safeCat = cat.replace(/[^a-zA-Z0-9]/g, '');
+								var chk = tableContainer.querySelectorAll(`.rowCheck-${safeCat}:checked`);
+								if (!chk || chk.length === 0) return;
+
+								var ind = Array.from(chk).map(cb => parseInt(cb.getAttribute('data-idx'), 10));
+
+								if (richting === 'omhoog') {
+									ind.sort((a, b) => a - b);
+									for (var i = 0; i < ind.length; i++) {
+										var x = ind[i];
+										if (x > 0 && !ind.includes(x - 1)) {
+											var tmp = priceList[cat][x];
+											priceList[cat][x] = priceList[cat][x - 1];
+											priceList[cat][x - 1] = tmp;
+											ind[i] = x - 1;
+											isVerplaatst = true;
+										}
+									}
+								} else {
+									ind.sort((a, b) => b - a);
+									for (var i = 0; i < ind.length; i++) {
+										var x = ind[i];
+										if (x < priceList[cat].length - 1 && !ind.includes(x + 1)) {
+											var tmp = priceList[cat][x];
+											priceList[cat][x] = priceList[cat][x + 1];
+											priceList[cat][x + 1] = tmp;
+											ind[i] = x + 1;
+											isVerplaatst = true;
+										}
+									}
+								}
+								herstelVinkjes.push({ safeCat: safeCat, indices: ind });
+							});
+
+							if (isVerplaatst) {
+								localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+								savePrijzen(priceList);
+								window.renderPriceMatrix();
+								tableContainer.scrollTop = scrollPos;
+
+								// Herstel de aangevinkte vakjes op hun nieuwe posities
+								herstelVinkjes.forEach(function(h) {
+									h.indices.forEach(function(newIdx) {
+										var cb = tableContainer.querySelector(`.rowCheck-${h.safeCat}[data-idx="${newIdx}"]`);
+										if (cb) cb.checked = true;
+									});
+								});
+							}
+							return isVerplaatst;
+						}
+
+						// HOOFDKNOP BOVENAAN: OMHOOG (WERKT VOOR CATEGORIEËN ÉN ARTIKELEN)
 						header.querySelector('#moveCatUpBtn').onclick = function() {
-							var checks = tableContainer.querySelectorAll('.catCheck:checked'); if(checks.length===0) return;
-							var selCats = Array.from(checks).map(cb => cb.value); var keys = Object.keys(priceList); var moved = false;
-							for(let i=0; i<keys.length; i++) { if (selCats.includes(keys[i]) && i > 0 && !selCats.includes(keys[i-1])) { let temp = keys[i]; keys[i] = keys[i-1]; keys[i-1] = temp; moved = true; } }
-							if(moved) { let newList = {}; keys.forEach(k => newList[k] = priceList[k]); priceList = newList; savePrijzen(priceList); window.renderPriceMatrix(); selCats.forEach(c => { let cb = document.querySelector(`.catCheck[value="${c}"]`); if(cb) cb.checked = true; }); }
+							var catChecks = tableContainer.querySelectorAll('.catCheck:checked');
+							if (catChecks.length > 0) {
+								var selCats = Array.from(catChecks).map(cb => cb.value);
+								var keys = Object.keys(priceList);
+								var moved = false;
+								for (let i = 0; i < keys.length; i++) {
+									if (selCats.includes(keys[i]) && i > 0 && !selCats.includes(keys[i - 1])) {
+										let temp = keys[i]; keys[i] = keys[i - 1]; keys[i - 1] = temp; moved = true;
+									}
+								}
+								if (moved) {
+									let newList = {}; keys.forEach(k => newList[k] = priceList[k]);
+									priceList = newList; savePrijzen(priceList); window.renderPriceMatrix();
+									selCats.forEach(c => { let cb = document.querySelector(`.catCheck[value="${c}"]`); if (cb) cb.checked = true; });
+								}
+								return;
+							}
+							// Geen categorie aangevinkt? Verplaats aangevinkte artikelen omhoog!
+							verplaatsArtikelen('omhoog');
 						};
+
+						// HOOFDKNOP BOVENAAN: OMLAAG (WERKT VOOR CATEGORIEËN ÉN ARTIKELEN)
 						header.querySelector('#moveCatDownBtn').onclick = function() {
-							var checks = tableContainer.querySelectorAll('.catCheck:checked'); if(checks.length===0) return;
-							var selCats = Array.from(checks).map(cb => cb.value); var keys = Object.keys(priceList); var moved = false;
-							for(let i=keys.length-1; i>=0; i--) { if (selCats.includes(keys[i]) && i < keys.length-1 && !selCats.includes(keys[i+1])) { let temp = keys[i]; keys[i] = keys[i+1]; keys[i+1] = temp; moved = true; } }
-							if(moved) { let newList = {}; keys.forEach(k => newList[k] = priceList[k]); priceList = newList; savePrijzen(priceList); window.renderPriceMatrix(); selCats.forEach(c => { let cb = document.querySelector(`.catCheck[value="${c}"]`); if(cb) cb.checked = true; }); }
+							var catChecks = tableContainer.querySelectorAll('.catCheck:checked');
+							if (catChecks.length > 0) {
+								var selCats = Array.from(catChecks).map(cb => cb.value);
+								var keys = Object.keys(priceList);
+								var moved = false;
+								for (let i = keys.length - 1; i >= 0; i--) {
+									if (selCats.includes(keys[i]) && i < keys.length - 1 && !selCats.includes(keys[i + 1])) {
+										let temp = keys[i]; keys[i] = keys[i + 1]; keys[i + 1] = temp; moved = true;
+									}
+								}
+								if (moved) {
+									let newList = {}; keys.forEach(k => newList[k] = priceList[k]);
+									priceList = newList; savePrijzen(priceList); window.renderPriceMatrix();
+									selCats.forEach(c => { let cb = document.querySelector(`.catCheck[value="${c}"]`); if (cb) cb.checked = true; });
+								}
+								return;
+							}
+							// Geen categorie aangevinkt? Verplaats aangevinkte artikelen omlaag!
+							verplaatsArtikelen('omlaag');
 						};
 						
 						header.querySelector('#delCatBtn').onclick = function() {
-						var checks = tableContainer.querySelectorAll('.catCheck:checked'); if(checks.length === 0) return;
-						var selCats = Array.from(checks).map(cb => cb.value);
-						
-						window.toonBevestiging({
-							titel: "Categorie(ën) definitief wissen",
-							tekst: `⚠️ <strong>GEVAAR:</strong> Weet u zeker dat u deze <strong>${selCats.length}</strong> categorie(ën) met <u>ALLE inhoud en artikelen</u> wilt wissen?`,
-							knopTekst: "🗑️ Ja, categorie met inhoud wissen",
-							knopKleur: "#c0392b",
-							icoon: "⚠️"
-						}, function() {
-							selCats.forEach(c => { delete priceList[c]; }); 
-							localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-							savePrijzen(priceList); 
-							window.renderPriceMatrix();
-						});
+							var checks = tableContainer.querySelectorAll('.catCheck:checked'); if(checks.length === 0) return;
+							var selCats = Array.from(checks).map(cb => cb.value);
+							
+							window.toonBevestiging({
+								titel: "Categorie(ën) definitief wissen",
+								tekst: `⚠️ <strong>GEVAAR:</strong> Weet u zeker dat u deze <strong>${selCats.length}</strong> categorie(ën) met <u>ALLE inhoud en artikelen</u> wilt wissen?`,
+								knopTekst: "🗑️ Ja, categorie met inhoud wissen",
+								knopKleur: "#c0392b",
+								icoon: "⚠️"
+							}, function() {
+								selCats.forEach(c => { delete priceList[c]; }); 
+								localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+								savePrijzen(priceList); 
+								window.renderPriceMatrix();
+							});
 						};
 
 						var tableContainer = document.createElement('div'); tableContainer.style.cssText = "flex:1; overflow-y:auto; padding-right:5px;";
@@ -1014,9 +1141,9 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 										<span contenteditable="true" class="edit-catname" data-oldcat="${cat}" style="cursor:text; border-bottom:1px dashed rgba(255,255,255,0.7); padding-bottom:1px;">${cat}</span>
 									</div>
 									<div style="display:flex; align-items:center; gap:8px;">
-										<button class="move-row-up-btn" data-cat="${cat}" data-safecat="${safeCat}" style="background:#34495e; border:none; color:white; padding:4px 10px; border-radius:3px; cursor:pointer;">⬆️</button>
-										<button class="move-row-down-btn" data-cat="${cat}" data-safecat="${safeCat}" style="background:#34495e; border:none; color:white; padding:4px 10px; border-radius:3px; cursor:pointer;">⬇️</button>
-										<button class="del-row-btn" data-cat="${cat}" data-safecat="${safeCat}" style="background:#c0392b; border:none; color:white; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:15px;">🗑️ Wis</button>
+										<button class="move-row-up-btn" data-cat="${cat}" style="background:#34495e; border:none; color:white; padding:4px 10px; border-radius:3px; cursor:pointer;" title="Verplaats geselecteerde artikelen omhoog">⬆️</button>
+										<button class="move-row-down-btn" data-cat="${cat}" style="background:#34495e; border:none; color:white; padding:4px 10px; border-radius:3px; cursor:pointer;" title="Verplaats geselecteerde artikelen omlaag">⬇️</button>
+										<button class="del-row-btn" data-cat="${cat}" data-safecat="${safeCat}" style="background:#c0392b; border:none; color:white; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:15px;" title="Wis geselecteerde artikelen">🗑️ Wis</button>
 										<button class="add-row-btn" data-cat="${cat}" style="background:#f39c12; border:none; color:white; padding:5px 12px; border-radius:3px; cursor:pointer; font-weight:bold;">➕ Rij toevoegen</button>
 									</div>
 								</div>`;
@@ -1052,111 +1179,129 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 									priceList = newList; savePrijzen(priceList); window.renderPriceMatrix();
 								};
 							});
-							// BEWAREN EN DOORLOPEN VAN PRIJZEN (ENTER = VOLGENDE CEL OF NIEUWE RIJ)
+
 							tableContainer.querySelectorAll('.edit-price-cell').forEach(function(cell) {
-							// 1. Opslaan bij verlaten van de cel (blur)
-							cell.onblur = function() {
-								var cat = this.getAttribute('data-cat'); 
-								var idx = parseInt(this.getAttribute('data-idx')); 
-								var star = this.getAttribute('data-star'); 
-								var v = this.innerText.replace('€', '').trim(); 
-								priceList[cat][idx].prijzen[star] = (isNaN(v) || v === "") ? v : parseFloat(v); 
-								localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-								savePrijzen(priceList);
-								if (v !== "" && !v.toLowerCase().includes("twijfelbak")) { this.innerText = "€ " + v; }
-							};
+								cell.onblur = function() {
+									var cat = this.getAttribute('data-cat'); 
+									var idx = parseInt(this.getAttribute('data-idx')); 
+									var star = this.getAttribute('data-star'); 
+									var v = this.innerText.replace('€', '').trim(); 
+									priceList[cat][idx].prijzen[star] = (isNaN(v) || v === "") ? v : parseFloat(v); 
+									localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+									savePrijzen(priceList);
+									if (v !== "" && !v.toLowerCase().includes("twijfelbak")) { this.innerText = "€ " + v; }
+								};
 
-							// 2. Enter-toets op het einde van de rij (nieuwe regel) of doorloop
-							cell.onkeydown = function(e) {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									var cat = this.getAttribute('data-cat');
-									var idx = parseInt(this.getAttribute('data-idx'));
-									var star = this.getAttribute('data-star');
-									
-									// Huidige waarde direct wegschrijven
-									this.blur();
+								cell.onkeydown = function(e) {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										var cat = this.getAttribute('data-cat');
+										var idx = parseInt(this.getAttribute('data-idx'));
+										var star = this.getAttribute('data-star');
+										this.blur();
 
-									if (star === '4_sterren') {
-										// EINDE VAN DE RIJ: Voeg direct eronder een nieuwe regel in
-										priceList[cat].splice(idx + 1, 0, {
-											"artikel": "",
-											"prijzen": {"1_ster": "", "2_sterren": "", "3_sterren": "", "4_sterren": ""}
-										});
-										localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-										savePrijzen(priceList);
-
-										// Behou de exacte scrollpositie van de tabel
-										var scrollPos = tableContainer.scrollTop;
-										window.renderPriceMatrix();
-										tableContainer.scrollTop = scrollPos;
-
-										// Zet de cursor direct klaar in de nieuwe artikelnaamcel
-										var nieuweRijArtikel = tableContainer.querySelector(`.edit-artname-cell[data-cat="${cat}"][data-idx="${idx + 1}"]`);
-										if (nieuweRijArtikel) {
-											nieuweRijArtikel.focus();
-											nieuweRijArtikel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-										}
-									} else {
-										// Niet einde van rij: spring naar de volgende sterrencel
-										var sterVolgorde = ["1_ster", "2_sterren", "3_sterren", "4_sterren"];
-										var volgendSterIdx = sterVolgorde.indexOf(star) + 1;
-										if (volgendSterIdx < sterVolgorde.length) {
-											var volgendeCel = tableContainer.querySelector(`.edit-price-cell[data-cat="${cat}"][data-idx="${idx}"][data-star="${sterVolgorde[volgendSterIdx]}"]`);
-											if (volgendeCel) volgendeCel.focus();
+										if (star === '4_sterren') {
+											priceList[cat].splice(idx + 1, 0, {
+												"artikel": "",
+												"prijzen": {"1_ster": "", "2_sterren": "", "3_sterren": "", "4_sterren": ""}
+											});
+											localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+											savePrijzen(priceList);
+											var scrollPos = tableContainer.scrollTop;
+											window.renderPriceMatrix();
+											tableContainer.scrollTop = scrollPos;
+											var nieuweRijArtikel = tableContainer.querySelector(`.edit-artname-cell[data-cat="${cat}"][data-idx="${idx + 1}"]`);
+											if (nieuweRijArtikel) {
+												nieuweRijArtikel.focus();
+												nieuweRijArtikel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+											}
+										} else {
+											var sterVolgorde = ["1_ster", "2_sterren", "3_sterren", "4_sterren"];
+											var volgendSterIdx = sterVolgorde.indexOf(star) + 1;
+											if (volgendSterIdx < sterVolgorde.length) {
+												var volgendeCel = tableContainer.querySelector(`.edit-price-cell[data-cat="${cat}"][data-idx="${idx}"][data-star="${sterVolgorde[volgendSterIdx]}"]`);
+												if (volgendeCel) volgendeCel.focus();
+											}
 										}
 									}
-								}
-							};
-						});
-
-						// BEWAREN EN DOORLOPEN VAN ARTIKELNAAM
-						tableContainer.querySelectorAll('.edit-artname-cell').forEach(function(cell) {
-							cell.onblur = function() {
-								var cat = this.getAttribute('data-cat'); 
-								var idx = parseInt(this.getAttribute('data-idx')); 
-								priceList[cat][idx].artikel = this.innerText.trim(); 
-								localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-								savePrijzen(priceList);
-							};
-
-							cell.onkeydown = function(e) {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									this.blur();
-									// Spring naar 1-ster cel van deze rij
-									var cat = this.getAttribute('data-cat');
-									var idx = parseInt(this.getAttribute('data-idx'));
-									var ster1 = tableContainer.querySelector(`.edit-price-cell[data-cat="${cat}"][data-idx="${idx}"][data-star="1_ster"]`);
-									if (ster1) ster1.focus();
-								}
-							};
-						});
-							tableContainer.querySelectorAll('.add-row-btn').forEach(function(btn) { btn.onclick = function() { var c=this.getAttribute('data-cat'); priceList[c].unshift({"artikel":"", "prijzen":{"1_ster":"", "2_sterren":"", "3_sterren":"", "4_sterren":""}}); savePrijzen(priceList); window.renderPriceMatrix(); }; });
-							tableContainer.querySelectorAll('.move-row-up-btn').forEach(function(btn) { btn.onclick = function() { var c=this.getAttribute('data-cat'), sc=this.getAttribute('data-safecat'), chk=tableContainer.querySelectorAll(`.rowCheck-${sc}:checked`); if(chk.length===0) return; var ind=Array.from(chk).map(cb=>parseInt(cb.getAttribute('data-idx'))).sort((a,b)=>a-b); var m=false; for(var i=0;i<ind.length;i++){ var x=ind[i]; if(x>0 && !ind.includes(x-1)){ var tmp=priceList[c][x]; priceList[c][x]=priceList[c][x-1]; priceList[c][x-1]=tmp; ind[i]=x-1; m=true; } } if(m){ savePrijzen(priceList); window.renderPriceMatrix(); ind.forEach(x=>{ var cb=tableContainer.querySelector(`.rowCheck-${sc}[data-idx="${x}"]`); if(cb) cb.checked=true; }); } }; });
-							tableContainer.querySelectorAll('.move-row-down-btn').forEach(function(btn) { btn.onclick = function() { var c=this.getAttribute('data-cat'), sc=this.getAttribute('data-safecat'), chk=tableContainer.querySelectorAll(`.rowCheck-${sc}:checked`); if(chk.length===0) return; var ind=Array.from(chk).map(cb=>parseInt(cb.getAttribute('data-idx'))).sort((a,b)=>b-a); var m=false; for(var i=0;i<ind.length;i++){ var x=ind[i]; if(x<priceList[c].length-1 && !ind.includes(x+1)){ var tmp=priceList[c][x]; priceList[c][x]=priceList[c][x+1]; priceList[c][x+1]=tmp; ind[i]=x+1; m=true; } } if(m){ savePrijzen(priceList); window.renderPriceMatrix(); ind.forEach(x=>{ var cb=tableContainer.querySelector(`.rowCheck-${sc}[data-idx="${x}"]`); if(cb) cb.checked=true; }); } }; });
-							tableContainer.querySelectorAll('.del-row-btn').forEach(function(btn) {
-							btn.onclick = function() {
-								var cat = this.getAttribute('data-cat'); var safeCat = this.getAttribute('data-safecat');
-								var checks = tableContainer.querySelectorAll(`.rowCheck-${safeCat}:checked`); if(checks.length === 0) return;
-								
-								window.toonBevestiging({
-									titel: "Artikelen uit prijslijst wissen",
-									tekst: `Weet je zeker dat je deze <strong>${checks.length}</strong> geselecteerde rijen wilt wissen uit ${cat}?`,
-									knopTekst: "🗑️ Ja, rijen wissen",
-									knopKleur: "#c0392b",
-									icoon: "📊"
-								}, function() {
-									var indices = Array.from(checks).map(cb => parseInt(cb.getAttribute('data-idx'))).sort((a,b) => b - a);
-									indices.forEach(idx => priceList[cat].splice(idx, 1)); 
-									localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-									savePrijzen(priceList); 
-									window.renderPriceMatrix();
-								});
-							};
+								};
 							});
-							};
-						window.renderPriceMatrix(); modal.appendChild(tableContainer); document.body.appendChild(modal);
+
+							tableContainer.querySelectorAll('.edit-artname-cell').forEach(function(cell) {
+								cell.onblur = function() {
+									var cat = this.getAttribute('data-cat'); 
+									var idx = parseInt(this.getAttribute('data-idx')); 
+									priceList[cat][idx].artikel = this.innerText.trim(); 
+									localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+									savePrijzen(priceList);
+								};
+
+								cell.onkeydown = function(e) {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										this.blur();
+										var cat = this.getAttribute('data-cat');
+										var idx = parseInt(this.getAttribute('data-idx'));
+										var ster1 = tableContainer.querySelector(`.edit-price-cell[data-cat="${cat}"][data-idx="${idx}"][data-star="1_ster"]`);
+										if (ster1) ster1.focus();
+									}
+								};
+							});
+
+							tableContainer.querySelectorAll('.add-row-btn').forEach(function(btn) {
+								btn.onclick = function() {
+									var c = this.getAttribute('data-cat');
+									var scrollPos = tableContainer.scrollTop;
+									priceList[c].unshift({"artikel":"", "prijzen":{"1_ster":"", "2_sterren":"", "3_sterren":"", "4_sterren":""}});
+									savePrijzen(priceList);
+									window.renderPriceMatrix();
+									tableContainer.scrollTop = scrollPos;
+								};
+							});
+
+							tableContainer.querySelectorAll('.move-row-up-btn').forEach(function(btn) {
+								btn.onclick = function() {
+									var cat = this.getAttribute('data-cat');
+									verplaatsArtikelen('omhoog', cat);
+								};
+							});
+
+							tableContainer.querySelectorAll('.move-row-down-btn').forEach(function(btn) {
+								btn.onclick = function() {
+									var cat = this.getAttribute('data-cat');
+									verplaatsArtikelen('omlaag', cat);
+								};
+							});
+
+							tableContainer.querySelectorAll('.del-row-btn').forEach(function(btn) {
+								btn.onclick = function() {
+									var cat = this.getAttribute('data-cat');
+									var safeCat = this.getAttribute('data-safecat');
+									var checks = tableContainer.querySelectorAll(`.rowCheck-${safeCat}:checked`);
+									if (checks.length === 0) return;
+									
+									window.toonBevestiging({
+										titel: "Artikelen uit prijslijst wissen",
+										tekst: `Weet je zeker dat je deze <strong>${checks.length}</strong> geselecteerde rijen wilt wissen uit ${cat}?`,
+										knopTekst: "🗑️ Ja, rijen wissen",
+										knopKleur: "#c0392b",
+										icoon: "📊"
+									}, function() {
+										var scrollPos = tableContainer.scrollTop;
+										var indices = Array.from(checks).map(cb => parseInt(cb.getAttribute('data-idx'))).sort((a,b) => b - a);
+										indices.forEach(idx => priceList[cat].splice(idx, 1)); 
+										localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+										savePrijzen(priceList); 
+										window.renderPriceMatrix();
+										tableContainer.scrollTop = scrollPos;
+									});
+								};
+							});
+						};
+
+						window.renderPriceMatrix();
+						modal.appendChild(tableContainer);
+						document.body.appendChild(modal);	
 					};
 				}
 
@@ -1611,7 +1756,6 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							}
 
 							localStorage.setItem('zuiderlicht_wachtwoord', nieuwWw);
-							localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
 							voegLogboekToe("🔑 Wachtwoord gewijzigd", "Nieuw beheerwachtwoord ingesteld");
 
 							fb.innerText = "✅ Wachtwoord succesvol gewijzigd!";
@@ -1682,7 +1826,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					document.getElementById('inlineAddBtn').addEventListener('click', function() { window.maakBlancoRij(); });
 				}
 
-				// OPSLAAN LOGICA HOOFDLIJST (DIRECT OVERZICHT VAN OPGESLAGEN MERKEN)
+				// OPSLAAN LOGICA HOOFDLIJST (MET SLIMME DUBBEL-MELDING)
 				if (document.getElementById('inlineSaveBtn')) {
 					document.getElementById('inlineSaveBtn').addEventListener('click', function() {
 						var db = getDB(); 
@@ -1701,55 +1845,139 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						}
 						
 						var opgeslagenNamen = [];
+						var bestaandeDubbels = [];
+						var heeftEchteWijziging = false;
 
 						gew.forEach(tr => {
-							var oldMerk = tr.getAttribute('data-merk'); 
+							var oldMerk = tr.getAttribute('data-merk') || ''; 
+							var oldSterren = tr.getAttribute('data-sterren') || ''; 
+							var oldInfo = tr.getAttribute('data-info') || ''; 
+
 							var newMerk = tr.querySelector('.inline-edit-merk').innerText.trim();
 							var newSterren = tr.querySelector('.inline-edit-sterren').innerText.trim();
 							var newInfo = tr.querySelector('.inline-edit-info').innerText.trim();
 							
+							// Als merknaam leeg is gemaakt: wis deze specifieke variant
 							if (!newMerk) {
 								if (oldMerk && oldMerk !== "Merk niet gevonden!") {
-									var delIdx = db.findIndex(x => String(x.merk).toLowerCase() === String(oldMerk).toLowerCase());
-									if (delIdx > -1) db.splice(delIdx, 1);
+									var delIdx = db.findIndex(x => 
+										x &&
+										String(x.merk).trim().toLowerCase() === oldMerk.trim().toLowerCase() &&
+										String(x.sterren || '').trim() === oldSterren.trim() &&
+										String(x.info || '').trim().toLowerCase() === oldInfo.trim().toLowerCase()
+									);
+									if (delIdx > -1) {
+										db.splice(delIdx, 1);
+										heeftEchteWijziging = true;
+									}
 								}
 								return; 
 							}
 
-							opgeslagenNamen.push(newMerk);
 							var newItem = { "merk": newMerk, "sterren": newSterren, "info": newInfo, "type": "", "werknemer": "Beheer" };
 
 							if (tr.classList.contains('is-new') || !oldMerk || oldMerk === "Merk niet gevonden!") {
-								var bestaat = db.findIndex(x => String(x.merk).toLowerCase() === newMerk.toLowerCase());
-								if (bestaat > -1) { db[bestaat] = newItem; } else { db.push(newItem); }
+								// NIEUW MERK: controleer of alle 3 kenmerken al exact bestaan
+								var exactBestaat = db.findIndex(x => 
+									x &&
+									String(x.merk).trim().toLowerCase() === newMerk.toLowerCase() &&
+									String(x.sterren || '').trim() === newSterren &&
+									String(x.info || '').trim().toLowerCase() === newInfo.toLowerCase()
+								);
+								if (exactBestaat > -1) {
+									// Bestaat al 100% identiek: niet dubbel toevoegen, maar melden
+									bestaandeDubbels.push(newMerk);
+								} else {
+									// Minstens 1 kenmerk verschilt: echt nieuw toevoegen!
+									db.push(newItem);
+									opgeslagenNamen.push(newMerk);
+									heeftEchteWijziging = true;
+								}
 							} else {
-								var idx = db.findIndex(x => String(x.merk).toLowerCase() === String(oldMerk).toLowerCase());
-								if (idx > -1) { db[idx] = newItem; } else { db.push(newItem); }
+								// BESTAAND MERK BEWERKT
+								var idx = db.findIndex(x => 
+									x &&
+									String(x.merk).trim().toLowerCase() === oldMerk.trim().toLowerCase() &&
+									String(x.sterren || '').trim() === oldSterren.trim() &&
+									String(x.info || '').trim().toLowerCase() === oldInfo.trim().toLowerCase()
+								);
+								if (idx === -1) {
+									idx = db.findIndex(x => x && String(x.merk).trim().toLowerCase() === oldMerk.trim().toLowerCase());
+								}
+
+								if (idx > -1) {
+									// Is er wel écht iets gewijzigd aan deze rij?
+									var ongewijzigd = (newMerk.toLowerCase() === oldMerk.toLowerCase() &&
+									                   newSterren === oldSterren &&
+									                   newInfo.toLowerCase() === oldInfo.toLowerCase());
+									if (ongewijzigd) {
+										bestaandeDubbels.push(newMerk);
+									} else {
+										db[idx] = newItem;
+										opgeslagenNamen.push(newMerk);
+										heeftEchteWijziging = true;
+									}
+								} else {
+									db.push(newItem);
+									opgeslagenNamen.push(newMerk);
+									heeftEchteWijziging = true;
+								}
 							}
 						});
 
-						db.sort((a, b) => String(a.merk).localeCompare(String(b.merk), 'nl', { numeric: true, sensitivity: 'base' }));
-						saveDB(db); 
-						localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-						
-						// Bewaar enkel welke merken getoond moeten worden en de bannertekst
-						localStorage.setItem('zuiderlicht_toon_pas_opgeslagen', JSON.stringify(opgeslagenNamen)); 
-						voegLogboekToe("➕ Merken bewerkt/toegevoegd", `${opgeslagenNamen.length} merk(en): ${opgeslagenNamen.slice(0, 4).join(', ')}${opgeslagenNamen.length > 4 ? '...' : ''}`);
-						var aantal = opgeslagenNamen.length;
-						var tekst = `✅ ${aantal} ${aantal === 1 ? 'merk' : 'merken'} succesvol opgeslagen: ${opgeslagenNamen.join(', ')}`;
-						localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({ tekst: tekst, kleur: '#d4edda', rand: '#c3e6cb', tekstKleur: '#155724' }));
+						if (heeftEchteWijziging) {
+							db.sort((a, b) => String(a.merk).localeCompare(String(b.merk), 'nl', { numeric: true, sensitivity: 'base' }));
+							saveDB(db); 
+							localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+							voegLogboekToe("➕ Merken bewerkt/toegevoegd", `${opgeslagenNamen.length} merk(en): ${opgeslagenNamen.slice(0, 4).join(', ')}${opgeslagenNamen.length > 4 ? '...' : ''}`);
+						}
 
-						// Schakel de tabblad-waarschuwing uit voor dit gewilde herladen
+						// Zorg dat zowel nieuwe als al bestaande merken getoond/opgelicht worden
+						var alleBetrokkenen = opgeslagenNamen.concat(bestaandeDubbels);
+						localStorage.setItem('zuiderlicht_toon_pas_opgeslagen', JSON.stringify(alleBetrokkenen));
+
+						// Stel de juiste boodschap en kleur samen
+						var meldingDelen = [];
+						var bannerKleur = '#d4edda';
+						var bannerRand = '#c3e6cb';
+						var bannerTekstKleur = '#155724';
+
+						if (opgeslagenNamen.length > 0) {
+							var a = opgeslagenNamen.length;
+							meldingDelen.push(`✅ ${a} ${a === 1 ? 'merk' : 'merken'} succesvol opgeslagen: ${opgeslagenNamen.join(', ')}`);
+						}
+
+						if (bestaandeDubbels.length > 0) {
+							var d = bestaandeDubbels.length;
+							if (opgeslagenNamen.length === 0) {
+								// Enkel reeds bestaande dubbels ingevoerd
+								bannerKleur = '#fff3cd';
+								bannerRand = '#ffeeba';
+								bannerTekstKleur = '#856404';
+								meldingDelen.push(`ℹ️ ${d === 1 ? 'Dit merk staat' : 'Deze merken staan'} al in de lijst (met dezelfde sterren en info): ${bestaandeDubbels.join(', ')}`);
+							} else {
+								meldingDelen.push(`(ℹ️ ${bestaandeDubbels.join(', ')} stond al in de lijst)`);
+							}
+						}
+
+						var tekst = meldingDelen.join(' ');
+						localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({ 
+							tekst: tekst, 
+							kleur: bannerKleur, 
+							rand: bannerRand, 
+							tekstKleur: bannerTekstKleur 
+						}));
+
 						window.isOpslaanBezig = true;
 						document.querySelectorAll('#resultTable tr.is-modified').forEach(tr => tr.classList.remove('is-modified'));
 						window.location.reload();
 					});
 				}
 
-				// WISSEN LOGICA HOOFDLIJST (MET EIGEN VENSTER)
+				// WISSEN LOGICA HOOFDLIJST (HERSTELD & MET VOLLEDIGE VARIANT-ONDERSTEUNING)
 				if (document.getElementById('admBulkDelBtn')) {
 					document.getElementById('admBulkDelBtn').addEventListener('click', function() {
-						var checks = document.querySelectorAll('.kuisCheck:checked'); 
+						var checks = document.querySelectorAll('#resultTable .kuisCheck:checked'); 
 						if (checks.length === 0) { 
 							window.toonBevestiging({
 								titel: "Geen merken geselecteerd",
@@ -1761,35 +1989,51 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							return; 
 						}
 						
-						var _teWissen = Array.from(checks).map(function(c){ return String(c.value || ""); });
-						var _gezienW = {}; var _multi = [];
-						var _dbW = getDB();
-						_teWissen.forEach(function(nm){
-							var sleutelW = nm.toLowerCase(); if (!sleutelW || _gezienW[sleutelW]) return; _gezienW[sleutelW] = true;
-							var aantalW = _dbW.filter(function(m){ return m && m.merk && String(m.merk).toLowerCase() === sleutelW; }).length;
-							if (aantalW > 1) _multi.push(nm.trim() + " (" + aantalW + " rijen)");
+						var teWissenRijen = Array.from(checks).map(function(cb) {
+							var tr = cb.closest('tr');
+							return {
+								merk: (tr ? tr.getAttribute('data-merk') : cb.value) || '',
+								sterren: (tr ? tr.getAttribute('data-sterren') : '') || '',
+								info: (tr ? tr.getAttribute('data-info') : '') || ''
+							};
 						});
-						var _variantWaarschuwing = _multi.length > 0 ? "<br><br>⚠️ Let op, dit wist ook varianten: " + _multi.slice(0, 8).join(", ") + (_multi.length > 8 ? ", …" : "") + "." : "";
+
+						var namenLijst = teWissenRijen.map(function(x) { return x.merk; });
+
 						window.toonBevestiging({
 							titel: "Merken definitief wissen",
-							tekst: `Weet je zeker dat je deze <strong>${checks.length}</strong> geselecteerde merk(en) wilt wissen uit de database?${_variantWaarschuwing}`,
+							tekst: `Weet je zeker dat je deze <strong>${teWissenRijen.length}</strong> geselecteerde merk(en) wilt wissen uit de database?`,
 							knopTekst: "🗑️ Ja, geselecteerde merken wissen",
 							knopKleur: "#e74c3c",
 							icoon: "🗑️"
 						}, function() {
 							var db = getDB(); 
-							var names = Array.from(checks).map(c => c.value);
-							var lowerNames = names.map(n => n.toLowerCase());
-							var clean = db.filter(m => m && m.merk && lowerNames.indexOf(String(m.merk).toLowerCase()) === -1);
+
+							teWissenRijen.forEach(function(target) {
+								var idx = db.findIndex(function(m) {
+									return m &&
+										String(m.merk).trim().toLowerCase() === target.merk.trim().toLowerCase() &&
+										String(m.sterren || '').trim() === target.sterren.trim() &&
+										String(m.info || '').trim().toLowerCase() === target.info.trim().toLowerCase();
+								});
+								if (idx > -1) {
+									db.splice(idx, 1);
+								}
+							});
 							
-							saveDB(clean); 
-							merkenLijst = clean; 
+							saveDB(db); 
+							merkenLijst = db; 
 							localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
 							
-							voegLogboekToe("🗑️ Merken gewist", `${names.length} merk(en) verwijderd uit hoofdlijst`);
+							voegLogboekToe("🗑️ Merken gewist", `${namenLijst.length} merk(en) verwijderd uit hoofdlijst`);
 							
-							var tekst = `🗑️ ${names.length} ${names.length === 1 ? 'merk' : 'merken'} succesvol verwijderd: ${names.join(', ')}`;
-							localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({ tekst: tekst, kleur: '#f8d7da', rand: '#f5c6cb', tekstKleur: '#721c24' }));
+							var tekst = `🗑️ ${namenLijst.length} ${namenLijst.length === 1 ? 'merk' : 'merken'} succesvol verwijderd: ${namenLijst.join(', ')}`;
+							localStorage.setItem('zuiderlicht_feedback_banner', JSON.stringify({ 
+								tekst: tekst, 
+								kleur: '#f8d7da', 
+								rand: '#f5c6cb', 
+								tekstKleur: '#721c24' 
+							}));
 							
 							window.isOpslaanBezig = true;
 							window.location.reload();
@@ -1965,8 +2209,17 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 												if(newMerk !== "") {
 							goedgekeurdeMerken.push(newMerk);
 							var newItem = { "merk": newMerk, "sterren": newSterren, "info": newInfo, "type": "", "werknemer": "Beheer" };
-							var bestaat = db.findIndex(x => x && String(x.merk).trim().toLowerCase() === newMerk.toLowerCase() && String(x.info || "").trim().toLowerCase() === newInfo.toLowerCase());
-							if (bestaat > -1) { db[bestaat] = newItem; } else { db.push(newItem); }
+							var exactBestaat = db.findIndex(x => 
+								x && 
+								String(x.merk).trim().toLowerCase() === newMerk.toLowerCase() && 
+								String(x.sterren || "").trim() === newSterren &&
+								String(x.info || "").trim().toLowerCase() === newInfo.toLowerCase()
+							);
+							if (exactBestaat > -1) { 
+								db[exactBestaat] = newItem; 
+							} else { 
+								db.push(newItem); // Verschilt er een kenmerk? Altijd toevoegen!
+							}
 							var archiefGoed = getBoekjeArchief();
 							archiefGoed.push({ "merk": newMerk, "sterren": newSterren, "info": newInfo, "status": "toegevoegd", "datum": boekjeVandaag() });
 							saveBoekjeArchief(archiefGoed);
@@ -2340,7 +2593,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 			if(zoekString.length > 0) {
 				var resultaat = filterOpzoeking(zoekString);
 				
-				if (zoekString === "#kuis#" || zoekString === "*admin*") {
+				if (zoekString.toLowerCase() === "#kuis#" || zoekString.toLowerCase() === "*admin*") {
 					// Detecteer naar welke letter we moeten gaan (bijv. 'L' voor Lacoste)
 					let gewensteLetter = "#";
 					const highlightsJSON = localStorage.getItem('zuiderlicht_bulk_highlights');
