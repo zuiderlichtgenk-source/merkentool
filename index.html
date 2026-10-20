@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Merkentool Zuiderlicht v2.10</title>
+	<title>Merkentool Zuiderlicht v2.14 (build 2026-10-13d)</title>
 	<style>
 		a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}body{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}*{box-sizing:border-box}body{background-image:url(./img/achtergrond2.jpg);background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover;font-family:sans-serif;color:#3f3f3f}main{width:80%;min-width:1000px;margin:0 auto;padding-bottom:50px;background-color:rgba(240,240,240,.85);min-height:87vh}main>h1{font-size:28px;text-align:center;font-weight:700;padding-top:15px;}article{width:80%;min-width:800px;min-height:700px;border-radius:3px;background-color:rgba(240,240,240,.5);display:inline-block;text-align:center;padding-bottom:25px;margin:0 auto;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.18)}article>h3{font-size:28px;font-weight:800;margin-bottom:25px}label{font-size:18px}input,select{font-size:16px;padding:5px;}table{width:100% !important;background-color:#d3d3d3;opacity:.8;margin:0 auto;font-size:22px;line-height:22px}table th{font-weight:700;padding:5px;background-color:#a9a9a9;border:2px solid #000}table td{border:1px solid #000;vertical-align:middle;font-size:1.2rem;padding:5px;}tr:nth-child(even){background:rgba(136,188,86,.2)}tr:nth-child(odd){background:#fff}#solidariteit{flex:1 1 65% !important;min-width:600px !important;}
 		.pinned-zoekzone {position: sticky; top: 0; background: #f0f0f0; padding-top: 15px; padding-bottom: 20px; z-index: 100; border-bottom: 2px solid #ccc; margin-bottom: 20px;}
@@ -102,7 +102,7 @@
 
 							<button id="btnBulkInjectBoekje" type="button" style="background:#27ae60; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.15);">💾 Geselecteerde opslaan in database</button>
 							<button id="btnBulkDelBoekje" type="button" style="background:#c0392b; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;">🗑️ Geselecteerde wissen</button>
-							<button id="btnOogstBoekje" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;" title="Winkel: downloadt eerst automatisch een back-up en markeert daarna de nieuwe suggesties als verzonden">📤 Oogst doorsturen</button>
+							<button id="btnOogstBoekje" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer; font-size:13px;" title="Winkel: maakt eerst een back-up (je kiest zelf waar) en markeert daarna de nieuwe suggesties als verzonden">📤 Oogst doorsturen</button>
 						</div>
 					</div>
 
@@ -519,6 +519,21 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 				}
 			};
 		}
+		window.activeerShiftKlikBoekje = function() {
+			let lastCheckedBoekje = null; var container = document.getElementById("boekjeTableBody"); if (!container) return;
+			container.onclick = function(e) {
+				if (e.target && e.target.classList.contains("kuisBoekjeCheck")) {
+					var checkbox = e.target;
+					if (lastCheckedBoekje && !document.contains(lastCheckedBoekje)) lastCheckedBoekje = null;
+					if (e.shiftKey && lastCheckedBoekje) {
+						var checkboxes = Array.from(document.querySelectorAll('#boekjeTableBody .kuisBoekjeCheck'));
+						let start = checkboxes.indexOf(checkbox); let end = checkboxes.indexOf(lastCheckedBoekje);
+						if (start > -1 && end > -1) { checkboxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(chk => chk.checked = lastCheckedBoekje.checked); }
+					}
+					lastCheckedBoekje = checkbox;
+				}
+			};
+		};
 
 		window.addEventListener('load', function() {
 		// MEET DE HARDE CODEBASIS VÓÓR OVERNAME DOOR LOCALSTORAGE
@@ -637,6 +652,21 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					telling.toegevoegd++;
 				});
 				return telling;
+			}
+			window.maakBackupPakket = function() { return { db: getDB(), boekje: getBoekje(), prijzen: getPrijzen(), archief: getBoekjeArchief() }; }
+			window.backupBestandsnaam = function(voorvoegsel) { var nu = new Date(); return voorvoegsel + "_" + nu.getFullYear() + "-" + (nu.getMonth() + 1) + "-" + nu.getDate() + "_" + nu.getHours() + "u" + nu.getMinutes() + ".json"; }
+			window.klassiekeDownload = function(pakket, bestandsnaam) { var a = document.createElement("a"); a.setAttribute("href", "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pakket, null, 2))); a.setAttribute("download", bestandsnaam); document.body.appendChild(a); a.click(); a.remove(); }
+			// Vraagt waar opgeslagen moet worden (USB-stick); valt terug op klassieke download zonder dialoog.
+			window.backupOpslaanMetDialoog = function(pakket, bestandsnaam) {
+				try {
+					if (typeof window.showSaveFilePicker === "function") {
+						return window.showSaveFilePicker({ suggestedName: bestandsnaam, types: [{ description: "Merkentool back-up", accept: { "application/json": [".json"] } }] }).then(function(koppeling){
+							return koppeling.createWritable().then(function(schrijver){ return schrijver.write(JSON.stringify(pakket, null, 2)).then(function(){ return schrijver.close(); }).then(function(){ return true; }); });
+						}, function(){ return false; });
+					}
+				} catch (e) {}
+				try { window.klassiekeDownload(pakket, bestandsnaam); return Promise.resolve(true); }
+				catch (e) { return Promise.resolve(false); }
 			}
 			function getPrijzen() { return JSON.parse(localStorage.getItem('zuiderlicht_prijzen_v1')) || {}; }
 			function savePrijzen(p) { localStorage.setItem('zuiderlicht_prijzen_v1', JSON.stringify(p)); }
@@ -828,12 +858,12 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							</div>
 						</div>
 						<div class="adm-groep">
-							<span class="adm-groep-titel">Gegevens &amp; back-up</span>
+							<span class="adm-groep-titel">Gegevens &amp; broncode</span>
 							<div class="adm-groep-knoppen">
-							<!-- DE 3 DATA-KNOPPEN (BACK-UP, SAMENVOEGEN & OVERSCHRIJVEN) -->
-						<button id="admBackupBtn" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:3px; cursor:pointer;" title="Maak een back-up bestand voor de USB-stick">📥 Back-up</button>
-						<button id="admMergeBtn" type="button" style="background:#8e44ad; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:3px; cursor:pointer;" title="Voor bestanden van thuis: voegt samen zonder winkel-suggesties te verliezen">🔄 Slimme Restore (Samenvoegen)</button>
-						<button id="admFullRestoreBtn" type="button" style="background:#d35400; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:3px; cursor:pointer;" title="Voor de wekelijkse pc-wissel: maakt van deze computer een exacte 1-op-1 kopie">📤 Volledige Restore (Overschrijven)</button>
+						<button id="admBackupBtn" type="button" style="background:#2980b9; color:white; font-weight:bold; padding:8px 12px; border:none; border-radius:3px; cursor:pointer;" title="Maak een back-up bestand (.json) voor de USB-stick">📥 Back-up (.json)</button>
+						<button id="admMergeBtn" type="button" style="background:#8e44ad; color:white; font-weight:bold; padding:8px 12px; border:none; border-radius:3px; cursor:pointer;" title="Voor bestanden van thuis: voegt samen zonder winkel-suggesties te verliezen">🔄 Slimme Restore</button>
+						<button id="admFullRestoreBtn" type="button" style="background:#d35400; color:white; font-weight:bold; padding:8px 12px; border:none; border-radius:3px; cursor:pointer;" title="Voor de wekelijkse pc-wissel: maakt van deze computer een exacte 1-op-1 kopie">📤 Volledige Restore</button>
+						<button id="admBakeHtmlBtn" type="button" style="background:#16a085; color:white; font-weight:bold; padding:8px 12px; border:none; border-radius:3px; cursor:pointer;" title="Genereer een kant-en-klaar nieuw index.html bestand met de huidige merken en prijzen als vaste broncode">🧬 Bak index.html</button>
 							</div>
 						</div>
 						<div class="adm-groep">
@@ -843,9 +873,10 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						<button id="admUitlogBtn" type="button" style="background:#c0392b; color:white; font-weight:bold; padding:7px 12px; border:none; border-radius:3px; cursor:pointer;" title="Uitloggen als beheerder">🔒 Uitloggen</button>
 							</div>
 						</div>
-						<input type="file" id="admFileInput" accept=".json" style="display:none;">
+					<input type="file" id="admFileInput" accept=".json" style="display:none;">
 						<input type="file" id="admFullFileInput" accept=".json" style="display:none;">
-					</div>
+						<input type="file" id="admBakeFileInput" accept=".html" style="display:none;">
+					</div>	
 				`;
 
 				const merkenBalk = document.getElementById('balkMerkenActies');
@@ -1132,23 +1163,112 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 				// 1. BACK-UP DOWNLOADEN MET DATUM/TIJD
 				if (document.getElementById('admBackupBtn')) {
 					document.getElementById('admBackupBtn').onclick = function() {
-						var pakket = { 
-							db: getDB(), 
-							boekje: getBoekje(), 
-							prijzen: getPrijzen(), 
-							archief: getBoekjeArchief(),
-							/* ww bewust weggelaten: inlogcode blijft lokaal per pc en reist niet mee met de back-up */ 
-						};
-						var nu = new Date();
-						var tijdTekst = `${nu.getFullYear()}-${nu.getMonth()+1}-${nu.getDate()}_${nu.getHours()}u${nu.getMinutes()}`;
-						var bestandsnaam = `zuiderlicht_backup_${tijdTekst}.json`;
+						window.klassiekeDownload(window.maakBackupPakket(), window.backupBestandsnaam('zuiderlicht_backup'));
+					};
+				}
+				// 1B. GLOEDNIEUWE INDEX.HTML GENEREREN (BRONCODE BAKKEN)
+				function voerBroncodeBakkingUit(broncodeTekst) {
+					try {
+						var db = getDB();
+						if (!db || db.length === 0) {
+							alert("Geen merken gevonden om in te bakken.");
+							return;
+						}
 
-						var a = document.createElement('a');
-						a.setAttribute("href", "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pakket, null, 2)));
-						a.setAttribute("download", bestandsnaam);
-						document.body.appendChild(a);
-						a.click();
-						a.remove();
+						// 1. Detecteer huidige versiesleutel en hoog op (bijv. v6 -> v7)
+						var vMatch = broncodeTekst.match(/zuiderlicht_db_v(\d+)/);
+						var huidigeVersie = vMatch ? parseInt(vMatch[1], 10) : 6;
+						var nieuweVersie = huidigeVersie + 1;
+						var oudeSleutelRegex = new RegExp("zuiderlicht_db_v" + huidigeVersie, "g");
+						var nieuweSleutel = "zuiderlicht_db_v" + nieuweVersie;
+
+						// 2. Vervang versiesleutel overal in het bestand
+						var bewerkt = broncodeTekst.replace(oudeSleutelRegex, nieuweSleutel);
+
+						// 3. Vervang de hardcoded merkenlijst op regel 71
+						var nieuweMerkenJSON = JSON.stringify(db);
+						bewerkt = bewerkt.replace(/let\s+merkenLijst\s*=\s*\[[\s\S]*?\];/, "let merkenLijst = " + nieuweMerkenJSON + ";");
+
+						// 4. Vervang de prijsmatrix met de huidige actuele prijzen
+						var actuelePrijzen = getPrijzen();
+						if (actuelePrijzen && Object.keys(actuelePrijzen).length > 0) {
+							var nieuwePrijzenJSON = JSON.stringify(actuelePrijzen, null, 2);
+							bewerkt = bewerkt.replace(/let\s+priceList\s*=\s*\{[\s\S]*?\n\t*\};/, "let priceList = " + nieuwePrijzenJSON + ";");
+						}
+
+						// 5. Download het kant-en-klare bestand als index.html
+						var blob = new Blob([bewerkt], { type: "text/html;charset=utf-8" });
+						var link = document.createElement("a");
+						link.href = URL.createObjectURL(blob);
+						link.download = "index.html";
+						document.body.appendChild(link);
+						link.click();
+						link.remove();
+
+						voegLogboekToe("🧬 Broncode gebakken", `index.html gegenereerd (versie v${nieuweVersie}, ${db.length} merken)`);
+						
+						window.toonBevestiging({
+							titel: "index.html succesvol gegenereerd!",
+							tekst: `Er is een gloednieuwe <strong>index.html</strong> gedownload in je Downloads-map!<br><br>` +
+							       `• <strong>${db.length}</strong> merken zijn vast ingebakken.<br>` +
+							       `• Databaseversie is automatisch verhoogd naar <strong>v${nieuweVersie}</strong>.<br><br>` +
+							       `<em>💡 Vervang je oude index.html door dit bestand (of upload het naar GitHub). Iedereen krijgt direct automatisch de nieuwste basis!</em>`,
+							knopTekst: "Super, begrepen!",
+							knopKleur: "#16a085",
+							icoon: "✅"
+						});
+					} catch(err) {
+						alert("Fout bij het genereren van index.html: " + err.message);
+					}
+				}
+
+				if (document.getElementById('admBakeHtmlBtn')) {
+					document.getElementById('admBakeHtmlBtn').onclick = function() {
+						var bakeInput = document.getElementById('admBakeFileInput');
+						
+						// Online (GitHub Pages / server): probeer direct via fetch
+						if (window.location.protocol !== 'file:') {
+							fetch(window.location.href, { cache: 'no-store' })
+								.then(res => {
+									if (!res.ok) throw new Error();
+									return res.text();
+								})
+								.then(tekst => {
+									if (tekst && tekst.includes('let merkenLijst')) {
+										voerBroncodeBakkingUit(tekst);
+									} else {
+										throw new Error();
+									}
+								})
+								.catch(() => {
+									if (bakeInput) bakeInput.click();
+								});
+						} else {
+							// Offline (file://): Windows vraagt even om het bestand aan te wijzen
+							window.toonBevestiging({
+								titel: "Nieuwe index.html bakken",
+								tekst: "Omdat je lokaal werkt, vraagt Windows even om je huidige <strong>index.html</strong> aan te duiden.<br><br>" +
+								       "De tool leest hem in, bakt alle huidige merken en prijzen erin en downloadt direct het nieuwe bestand!",
+								knopTekst: "📁 Kies huidige index.html",
+								knopKleur: "#16a085",
+								icoon: "🧬"
+							}, function() {
+								if (bakeInput) bakeInput.click();
+							});
+						}
+					};
+				}
+
+				if (document.getElementById('admBakeFileInput')) {
+					document.getElementById('admBakeFileInput').onchange = function(e) {
+						var file = e.target.files[0];
+						if (!file) return;
+						var reader = new FileReader();
+						reader.onload = function(evt) {
+							voerBroncodeBakkingUit(evt.target.result);
+						};
+						reader.readAsText(file);
+						this.value = "";
 					};
 				}
 
@@ -1692,7 +1812,33 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 				if (teller) { const aantal = getBoekje().filter(function(x){ return boekjeStatus(x) === "nieuw"; }).length; teller.innerText = aantal; teller.style.background = aantal > 0 ? "#e74c3c" : "transparent"; teller.style.color = aantal > 0 ? "#fff" : "#000"; }
 			};
 
-						window.renderBoekjeTabel = function() {
+									// Bewerkingen uit de boekjestabel terugschrijven naar de opslag (cellen leven anders alleen in de pagina).
+			function boekjeDomNaarOpslag() {
+				var body = document.getElementById("boekjeTableBody"); if (!body) return false;
+				var boekje = getBoekje();
+				var gewijzigd = false;
+				body.querySelectorAll("tr").forEach(function(tr){
+					var cb = tr.querySelector(".kuisBoekjeCheck"); if (!cb) return;
+					var idx = parseInt(cb.value, 10);
+					if (isNaN(idx) || !boekje[idx]) return;
+					var m = tr.querySelector(".edit-boekje-merk"), s = tr.querySelector(".edit-boekje-sterren"), ii = tr.querySelector(".edit-boekje-info");
+					var nm = m ? m.innerText.trim() : String(boekje[idx].merk || "");
+					if (nm === "") {
+						if (m) m.innerText = String(boekje[idx].merk || "");
+						if (s) s.innerText = String(boekje[idx].sterren || "");
+						if (ii) ii.innerText = String(boekje[idx].info || "");
+						return;
+					}
+					var ns = s ? s.innerText.trim() : String(boekje[idx].sterren || "");
+					var ni = ii ? ii.innerText.trim() : String(boekje[idx].info || "");
+					if (String(boekje[idx].merk || "") !== nm || String(boekje[idx].sterren || "") !== ns || String(boekje[idx].info || "") !== ni) {
+						boekje[idx].merk = nm; boekje[idx].sterren = ns; boekje[idx].info = ni; gewijzigd = true;
+					}
+				});
+				if (gewijzigd) saveBoekje(boekje);
+				return gewijzigd;
+			}
+			window.renderBoekjeTabel = function() {
 				const body = document.getElementById("boekjeTableBody"); if (!body) return; const boekje = getBoekje(); body.innerHTML = "";
 				var nieuwAantal = 0;
 				boekje.forEach(function(item, index) {
@@ -1743,6 +1889,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 				}
 				const aTeller = document.getElementById("boekjeArchiefTeller");
 				if (aTeller) aTeller.innerText = String(getBoekjeArchief().length);
+				if (typeof window.activeerShiftKlikBoekje === 'function') window.activeerShiftKlikBoekje();
 			};
 
 			// ALLES SELECTEREN IN HOOFDLIJST
@@ -1757,8 +1904,10 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 			// ALLES SELECTEREN IN BOEKJE
 			var checkAllB = document.getElementById('checkAllBoekje');
 			if (checkAllB) {
-				var isChecked = this.checked;
-				document.querySelectorAll('#boekjeTableBody .kuisBoekjeCheck').forEach(cb => cb.checked = isChecked);
+				checkAllB.onchange = function() {
+					var isChecked = this.checked;
+					document.querySelectorAll('#boekjeTableBody .kuisBoekjeCheck').forEach(cb => cb.checked = isChecked);
+				};
 			}
 			var archiefToggle = document.getElementById('btnToggleArchief');
 			if (archiefToggle) { archiefToggle.onclick = function() { var inh = document.getElementById('boekjeArchiefInhoud'); if (!inh) return; var open = inh.style.display !== 'none'; inh.style.display = open ? 'none' : 'block'; var tk = this.firstChild; if (tk) tk.textContent = (open ? '▶ ' : '▼ '); }; }
@@ -1804,6 +1953,7 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 							return;
 						}
 					} else { window._boekjeOverschrijfOK = false; }
+						boekjeDomNaarOpslag();
 						var wisIndices = Array.from(bChecks).map(c => parseInt(c.value)).sort((a,b) => b - a);
 					
 					wisIndices.forEach(idx => {
@@ -1839,6 +1989,8 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 					window.location.reload();
 				});
 			}
+			var boekjeBodySync = document.getElementById('boekjeTableBody');
+			if (boekjeBodySync) { boekjeBodySync.addEventListener('focusout', function() { boekjeDomNaarOpslag(); }); }
 
 			// GESELECTEERDE VOORSTELLEN WISSEN UIT HET BOEKJE (MET EIGEN VENSTER)
 			if (document.getElementById('btnBulkDelBoekje')) {
@@ -1867,7 +2019,8 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						var boekje = getBoekje();
 						var indices = Array.from(bChecks).map(c => parseInt(c.value)).sort((a, b) => b - a);
 						
-												var gewisteNamen = [];
+												boekjeDomNaarOpslag();
+						var gewisteNamen = [];
 						var archiefWis = getBoekjeArchief();
 						indices.forEach(idx => {
 							if (boekje[idx] && boekje[idx].merk) { gewisteNamen.push(boekje[idx].merk); archiefWis.push({ "merk": String(boekje[idx].merk).trim(), "info": String(boekje[idx].info || "").trim(), "status": "verwijderd", "datum": boekjeVandaag() }); }
@@ -1952,26 +2105,32 @@ document.getElementById("zoeken").onclick = function() { zoeken(); };
 						// OOGST DOORSTUREN (WINKEL): BACK-UP DOWNLOADEN + NIEUWE SUGGESTIES ALS VERZONDEN MARKEREN
 			if (document.getElementById('btnOogstBoekje')) {
 				document.getElementById('btnOogstBoekje').onclick = function() {
+					try {
 					var b = getBoekje();
 					var nieuw = b.filter(function(x){ return x && x.merk && String(x.merk).trim() !== "" && boekjeStatus(x) === "nieuw"; });
 					var bMeldBalk = document.getElementById('boekjeFeedbackBalk');
 					function oogstMelding(tekst, ok) { if (!bMeldBalk) { alert(tekst); return; } bMeldBalk.innerText = tekst; bMeldBalk.style.background = ok ? "#d4edda" : "#fff3cd"; bMeldBalk.style.borderColor = ok ? "#c3e6cb" : "#ffeeba"; bMeldBalk.style.color = ok ? "#155724" : "#856404"; bMeldBalk.style.display = 'block'; setTimeout(function(){ bMeldBalk.style.display = 'none'; }, 6000); }
 					if (nieuw.length === 0) { oogstMelding("Er staan geen nieuwe suggesties klaar om door te sturen.", false); return; }
-					var backupKnop = document.getElementById('admBackupBtn');
-					if (backupKnop) backupKnop.click();
-					var rest = [];
-					var archief = getBoekjeArchief();
-					b.forEach(function(x){
-						if (x && x.merk && String(x.merk).trim() !== "" && boekjeStatus(x) === "nieuw") {
-							archief.push({ merk: String(x.merk).trim(), info: String(x.info || "").trim(), sterren: String(x.sterren || "").trim(), status: "verzonden", datum: boekjeVandaag() });
-						} else { rest.push(x); }
-					});
-					saveBoekje(rest);
-					saveBoekjeArchief(archief);
-					localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
-					voegLogboekToe("📤 Oogst doorgestuurd", nieuw.length + " suggestie(s) als verzonden gemarkeerd");
-					window.renderBoekjeTabel(); window.updateBoekjeTeller();
-					oogstMelding("📤 Back-up gedownload en " + nieuw.length + " suggestie(s) als verzonden gemarkeerd.", true);
+					var pakketOogst = window.maakBackupPakket();
+					window.backupOpslaanMetDialoog(pakketOogst, window.backupBestandsnaam('zuiderlicht_oogst')).then(function(opgeslagen){
+						if (!opgeslagen) { oogstMelding("Geannuleerd — er is niets opgeslagen en niets gemarkeerd.", false); return; }
+						var rest = [];
+						var archief = getBoekjeArchief();
+						b.forEach(function(x){
+							if (x && x.merk && String(x.merk).trim() !== "" && boekjeStatus(x) === "nieuw") {
+								archief.push({ merk: String(x.merk).trim(), info: String(x.info || "").trim(), sterren: String(x.sterren || "").trim(), status: "verzonden", datum: boekjeVandaag() });
+							} else { rest.push(x); }
+						});
+						saveBoekje(rest);
+						saveBoekjeArchief(archief);
+						localStorage.setItem('zuiderlicht_heeft_wijzigingen', 'ja');
+						voegLogboekToe("📤 Oogst doorgestuurd", nieuw.length + " suggestie(s) als verzonden gemarkeerd");
+						window.renderBoekjeTabel(); window.updateBoekjeTeller();
+						oogstMelding("📤 Oogst opgeslagen en " + nieuw.length + " suggestie(s) als verzonden gemarkeerd.", true);
+						}, function(foutOpslaan){
+							oogstMelding("Opslaan mislukt (" + (foutOpslaan && foutOpslaan.message ? foutOpslaan.message : "onbekende fout") + ") — er is niets gemarkeerd.", false);
+						});
+						} catch (foutOogst) { try { oogstMelding("Oogst mislukt (" + (foutOogst && foutOogst.message ? foutOogst.message : "onbekende fout") + ") — er is niets gemarkeerd.", false); } catch (e2) { alert("Oogst mislukt: " + (foutOogst && foutOogst.message ? foutOogst.message : "onbekende fout")); } }
 				};
 			}
 			window.toggleBoekjeWeergave = function() {
